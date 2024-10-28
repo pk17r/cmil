@@ -7,12 +7,17 @@ Extracting Conjunctival melanocytic intraepithelial lesions (C-MIL) tissue from 
 - data: put all tif images here  
 - extracted: tissues extracted from images in data will be saved here  
 - extracted/image_name/segmented: roi area segments from tissue images will be saved here  
-- workingdir: temporary working directory
+- workingdir: R&D directory  
 
 
 ## Dependencies
-- opencv 4.10.0-dev: https://docs.opencv.org/4.10.0/d7/d9f/tutorial_linux_install.html
-- python3: Python 3.8.10
-- python3 pip: should already be there with python3
-- tiffFile: https://pypi.org/project/tifffile/
-- scikit-image: https://scikit-image.org/
+- opencv 4.10.0-dev: https://docs.opencv.org/4.10.0/d7/d9f/tutorial_linux_install.html  
+- python3: Python 3.8.10  
+- python3 pip: should already be there with python3  
+- tiffFile: https://pypi.org/project/tifffile/  
+- scikit-image: https://scikit-image.org/  
+
+
+## Notes
+- view tiff image using: tifffile <filename>
+- view tiff image series 0 using: tifffile <filename> -s 0

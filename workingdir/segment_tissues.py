@@ -93,8 +93,8 @@ for sub_img_num in range(1,no_of_images+1):
     #imshow(gaussian_smooth, 'gaussian_smooth')
     
     # Compute a mask
-    msk1 = morphology.remove_small_objects(gaussian_smooth < 0.5, 500)
-    msk2 = morphology.remove_small_holes(msk1, 500)
+    msk1 = morphology.remove_small_objects(gaussian_smooth < 0.7, 500)
+    msk2 = morphology.remove_small_holes(msk1, 4000)
     #imshow(msk2, 'msk2')
     
     # dilation
@@ -125,6 +125,7 @@ for sub_img_num in range(1,no_of_images+1):
     filename = os.path.join(segmented_images_dir, patient_id + " img#" + str(sub_img_num) + " Tumor.png")
     plt.savefig(filename)
     print("'" + filename + "' saved!")
+    plt.close()
 
     
     
@@ -160,6 +161,7 @@ for sub_img_num in range(1,no_of_images+1):
     filename = os.path.join(segmented_images_dir, patient_id + " img#" + str(sub_img_num) + " 2D mask.png")
     plt.savefig(filename)
     print("'" + filename + "' saved!")
+    plt.close()
     
     
     # show mask
@@ -179,6 +181,7 @@ for sub_img_num in range(1,no_of_images+1):
     filename = os.path.join(segmented_images_dir, patient_id + " img#" + str(sub_img_num) + " 2D mask figure.png")
     plt.savefig(filename)
     print("'" + filename + "' saved!")
+    plt.close()
     
     
     

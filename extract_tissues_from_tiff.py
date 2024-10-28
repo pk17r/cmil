@@ -4,7 +4,7 @@
 
 ##       ENTER PATIENT IMAGE ID         ##
 
-patient_id = "h2114154 h&e"
+patient_id = "h2114157 h&e"
 
 ##########################################
 
@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from skimage import morphology
 from skimage import filters
 import os
+import shutil
 
 # Plot the image
 def imshow(img, title):
@@ -38,6 +39,14 @@ if not os.path.isdir(data_dir):
     print("'" + data_dir + "' directory created. Please put patient image data.")
     exit()
 
+for root, dirs, files in os.walk(data_dir):
+    for f in files:
+        print("'" + os.path.join(extracted_dir, patient_id) + "' made empty.")
+        
+        os.unlink(os.path.join(root, f))
+        print("'" + os.path.join(extracted_dir, patient_id) + "' made empty.")
+    del userinp, root, dirs, files
+
 if not os.path.exists(os.path.join(data_dir, patient_id + ".tif")):
     print("'" + os.path.join(data_dir, patient_id + ".tif") + "' does not exist.")
     exit()
@@ -53,7 +62,6 @@ else:
     print("'" + os.path.join(extracted_dir, patient_id) + "' directory exists")
     userinp = input("Overwrite data (y/n)?")
     if userinp == "y":
-        import shutil
         for root, dirs, files in os.walk(os.path.join(extracted_dir, patient_id)):
             for f in files:
                 os.unlink(os.path.join(root, f))
@@ -111,6 +119,7 @@ plt.tight_layout()
 filename = os.path.join(extracted_dir, patient_id, patient_id + " 2D mask.png")
 plt.savefig(filename)
 print("'" + filename + "' saved!")
+plt.close()
 
 # sub image finding and cutting operation
 from skimage.measure import label, regionprops, regionprops_table

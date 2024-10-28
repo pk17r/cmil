@@ -1,14 +1,4 @@
 
-
-##########################################
-
-##       ENTER PATIENT IMAGE ID         ##
-
-patient_id = "h2114153 h&e"
-
-##########################################
-
-
 ## Import OpenCV
 
 import sys
@@ -23,7 +13,6 @@ from skimage import morphology
 from skimage import segmentation
 from skimage import filters
 
-import os
 
 # Plot the image
 def imshow(img, title):
@@ -32,47 +21,11 @@ def imshow(img, title):
     plt.title(title)
     plt.show(block=True)
 
-extracted_dir = "extracted"
-
-# count number of sub images
-no_of_images = 1
-
-while True:
-    filename = patient_id + " series[0] img#" + str(no_of_images)
-    if os.path.exists(os.path.join(extracted_dir, patient_id, filename + ".png")):
-        no_of_images=no_of_images+1
-    else:
-        no_of_images=no_of_images-1
-        print("no_of_images = " + str(no_of_images))
-        break
-
-if no_of_images == 0:
-    print("no extracted tissue images for patient image id: " + patient_id)
-    exit()
-
-segmented_images_dir = os.path.join(extracted_dir, patient_id, "segmented")
-
-if not os.path.isdir(segmented_images_dir):
-    os.mkdir(segmented_images_dir)
-    print("'" + segmented_images_dir + "' directory created")
-else:
-    print("'" + segmented_images_dir + "' directory exists")
-    userinp = input("Overwrite data (y/n)?")
-    if userinp == "y":
-        import shutil
-        for root, dirs, files in os.walk(segmented_images_dir):
-            for f in files:
-                os.unlink(os.path.join(root, f))
-            for d in dirs:
-                shutil.rmtree(os.path.join(root, d))
-        print("'" + os.path.join(extracted_dir, patient_id) + "' made empty.")
-        del userinp, root, dirs, files
-    else:
-        exit()
-
+patient_id = "h2114153 h&e"
+no_of_images = 4
 
 for sub_img_num in range(1,no_of_images+1):
-    filename = os.path.join(extracted_dir, patient_id, patient_id + " series[0] img#" + str(sub_img_num))
+    filename = patient_id + " series[0] img#" + str(sub_img_num)
     print(filename + " Lumma.png")
     
     #Image loading
@@ -93,8 +46,8 @@ for sub_img_num in range(1,no_of_images+1):
     #imshow(gaussian_smooth, 'gaussian_smooth')
     
     # Compute a mask
-    msk1 = morphology.remove_small_objects(gaussian_smooth < 0.7, 500)
-    msk2 = morphology.remove_small_holes(msk1, 4000)
+    msk1 = morphology.remove_small_objects(gaussian_smooth < 0.5, 500)
+    msk2 = morphology.remove_small_holes(msk1, 500)
     #imshow(msk2, 'msk2')
     
     # dilation
@@ -121,11 +74,10 @@ for sub_img_num in range(1,no_of_images+1):
     for ax in ax_arr.ravel():
         ax.set_axis_off()
     plt.tight_layout()
+    plt.savefig(filename + " tumor.png")
+    
     #plt.show()
-    filename = os.path.join(segmented_images_dir, patient_id + " img#" + str(sub_img_num) + " Tumor.png")
-    plt.savefig(filename)
-    print("'" + filename + "' saved!")
-    plt.close()
+    
 
     
     
@@ -158,10 +110,8 @@ for sub_img_num in range(1,no_of_images+1):
     plt.axis('off')
     #plt.title('color image 2D mask', fontsize = 25)
     plt.tight_layout()
-    filename = os.path.join(segmented_images_dir, patient_id + " img#" + str(sub_img_num) + " 2D mask.png")
-    plt.savefig(filename)
-    print("'" + filename + "' saved!")
-    plt.close()
+    plt.savefig(filename + " 2D mask.png")
+    
     
     
     # show mask
@@ -177,11 +127,9 @@ for sub_img_num in range(1,no_of_images+1):
     for ax in ax_arr.ravel():
         ax.set_axis_off()
     plt.tight_layout()
-    #plt.show()
-    filename = os.path.join(segmented_images_dir, patient_id + " img#" + str(sub_img_num) + " 2D mask figure.png")
-    plt.savefig(filename)
-    print("'" + filename + "' saved!")
-    plt.close()
+    plt.savefig(filename + " 2D mask figure.png")
+    
+    plt.show()
     
     
     
@@ -197,7 +145,7 @@ for sub_img_num in range(1,no_of_images+1):
     
     
     
-print("done!")
+    
 exit()
 
 
