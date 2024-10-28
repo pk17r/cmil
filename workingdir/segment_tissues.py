@@ -131,7 +131,7 @@ for sub_img_num in range(1,no_of_images+1):
     
     
     
-    # Find similar
+    # Find outer edge
     
     
     #image grayscale conversion
@@ -143,8 +143,8 @@ for sub_img_num in range(1,no_of_images+1):
     #imshow(gaussian_smooth, 'gaussian_smooth')
     
     # Compute a mask
-    g1 = morphology.remove_small_objects(gaussian_smooth_gray < 0.9, 500)
-    g2 = morphology.remove_small_holes(g1, 500)
+    g1 = morphology.remove_small_objects(gaussian_smooth_gray < 0.7, 500)
+    g2 = morphology.remove_small_holes(g1, 5000)
     #imshow(g2, 'g2')
     
     # dilation
