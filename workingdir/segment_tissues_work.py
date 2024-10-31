@@ -71,19 +71,80 @@ plt.close()
 del fig
 
 
-# Histogram
-fig = plt.hist(lumma_channel, bins=25) 
-plt.xlabel('Value')
-plt.ylabel('Frequency')
-plt.title('lumma_channel Histogram')
-filename = os.path.join(segmented_images_dir, patient_id + " img#" + str(sub_img_num) + " Lumma Histogram 25.png")
+red = img_color[:,:,0]
+fig, ax_arr = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(20, 12))
+fig.suptitle("Lumma vs Red Channel", fontsize = 25)
+ax_arr[0].set_title("Lumma Channel", fontsize = 20)
+ax_arr[0].set_axis_off()
+ax_arr[0].imshow(lumma_channel)
+ax_arr[1].set_title("Red Channel", fontsize = 20)
+ax_arr[1].set_axis_off()
+ax_arr[1].imshow(red)
+plt.tight_layout()
+filename = os.path.join(segmented_images_dir, patient_id + " img#" + str(sub_img_num) + " Lumma vs Red Channel.png")
 plt.savefig(filename)
 plt.show()
+plt.close()
+del fig
+
 
 
 # define binning in image
 bins = 20
 divisor = (np.floor(255 / bins).astype(np.uint8))
+
+
+# Histogram
+fig = plt.hist(red, bins=bins) 
+plt.xlabel('Value')
+plt.ylabel('Frequency')
+plt.title("Red Histogram " + str(bins) + " bins")
+filename = os.path.join(segmented_images_dir, patient_id + " img#" + str(sub_img_num) + " Red Histogram " + str(bins) + " bins.png")
+plt.savefig(filename)
+plt.show()
+del fig
+
+# decimate image into bins bands
+red_bands = (np.floor(red/divisor)).astype(np.uint8)
+filename = os.path.join(segmented_images_dir, patient_id + " img#" + str(sub_img_num) + " Red Bands " + str(bins) + ".png")
+cv2.imwrite(filename, red_bands * divisor, [cv2.IMWRITE_PNG_COMPRESSION , 0])
+imshow(red_bands, "red_bands " + str(bins))
+
+# figure to show different decimated values
+fig, ax_arr = plt.subplots(2, int(bins/2), sharex=True, sharey=True, figsize=(20, 12))
+fig.suptitle("Red Bands " + str(bins) + " Bins Representation", fontsize = 25)
+row=0
+col=0
+for band_i in range(0,bins):
+    print("band_i = " + str(band_i))
+    ax_arr[row,col].set_title("value == " + str(band_i + 1), fontsize = 20)
+    ax_arr[row,col].set_axis_off()
+    ax_arr[row,col].imshow(red_bands == band_i + 1)
+    col=col+1
+    if col == int(bins/2):
+        row = 1
+        col = 0
+
+plt.tight_layout()
+filename = os.path.join(segmented_images_dir, patient_id + " img#" + str(sub_img_num) + " Red Bands " + str(bins) + " Representation.png")
+plt.savefig(filename)
+plt.show()
+plt.close()
+del fig
+
+
+
+
+
+# Histogram
+fig = plt.hist(lumma_channel, bins=bins) 
+plt.xlabel('Value')
+plt.ylabel('Frequency')
+plt.title("lumma_channel Histogram " + str(bins) + " bins" )
+filename = os.path.join(segmented_images_dir, patient_id + " img#" + str(sub_img_num) + " Lumma Histogram " + str(bins) + " bins.png")
+plt.savefig(filename)
+plt.show()
+del fig
 
 # decimate image into bins bands
 lumma_bands = (np.floor(lumma_channel/divisor)).astype(np.uint8)
