@@ -7,16 +7,16 @@ show_images = 0
 save_intermediate_images = 0
 input_dir = "data/sheffield_h&e"
 #input_dir = "extracted/h2114154 h&e"
-#output_dir = "extracted/sheffield_h&e"
-output_dir = "workingdir/segmented"
-run_over_all_images = 0
+output_dir = "extracted/sheffield_h&e"
+#output_dir = "workingdir/segmented"
+run_over_all_images = 1
 image_name = "h2114186 h&e_ROI_3"
 
 # visualizations
-#output_visualization_dir = "extracted/sheffield_h&e/visualization"
-output_visualization_dir = "workingdir/segmented"
+output_visualization_dir = "extracted/sheffield_h&e/visualization"
+#output_visualization_dir = "workingdir/segmented"
 save_rgb_stroma_epithelia_comparison = 1
-save_bins_representation = 1
+save_bins_representation = 0
 
 
 ##########################################
@@ -64,13 +64,13 @@ if not os.path.isdir(input_dir):
     exit()
 
 if not os.path.isdir(output_dir):
-    print("output_dir: '" + output_dir + "' directory does not exist! Exiting...")
-    exit()
+    os.mkdir(output_dir)
+    print("output_dir: '" + output_dir + "' directory created.")
 
 if save_rgb_stroma_epithelia_comparison or save_bins_representation:
     if not os.path.isdir(output_visualization_dir):
-        print("output_visualization_dir: '" + output_visualization_dir + "' directory does not exist! Exiting...")
-        exit()
+        os.mkdir(output_visualization_dir)
+        print("output_visualization_dir: '" + output_visualization_dir + "' directory created.")
     
 
 # Files and Folders in Input Dir
