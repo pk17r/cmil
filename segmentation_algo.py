@@ -7,10 +7,15 @@ show_images = 0
 save_intermediate_images = 0
 input_dir = "data/sheffield_h&e"
 output_dir = "extracted/sheffield_h&e"
-output_visualization_dir = "extracted/sheffield_h&e/visualization"
-run_over_all_images = 1
-save_output_visualization_image = 1
+run_over_all_images = 0
 image_name = "h2114186 h&e_ROI_3"
+
+# visualizations
+#output_visualization_dir = "extracted/sheffield_h&e/visualization"
+output_visualization_dir = "workingdir/segmented"
+save_rgb_stroma_epithelia_comparison = 1
+save_lumma_bins_representation = 1
+
 
 ##########################################
 
@@ -61,7 +66,7 @@ if not os.path.isdir(output_dir):
     print("output_dir: '" + output_dir + "' directory does not exist! Exiting...")
     exit()
 
-if save_output_visualization_image:
+if save_rgb_stroma_epithelia_comparison or save_lumma_bins_representation:
     if not os.path.isdir(output_visualization_dir):
         print("output_visualization_dir: '" + output_visualization_dir + "' directory does not exist! Exiting...")
         exit()
@@ -126,53 +131,56 @@ for f in files:
     bins = 20
     divisor = (np.floor(255 / bins).astype(np.uint8))
     
-    # decimate image into bins bands
-    lumma_bands = (np.floor(img_lumma/divisor)).astype(np.uint8)
+    # decimate image into bins
+    lumma_bins = (np.floor(img_lumma/divisor)).astype(np.uint8)
     #filename = os.path.join(output_dir, image_name + " Lumma " + str(bins) + " Bins.png")
-    #cv2.imwrite(filename, lumma_bands * divisor, [cv2.IMWRITE_PNG_COMPRESSION , 0])
-    #imshow(lumma_bands, "lumma_bands " + str(bins))
+    #cv2.imwrite(filename, lumma_bins * divisor, [cv2.IMWRITE_PNG_COMPRESSION , 0])
+    #imshow(lumma_bins, "lumma_bins " + str(bins))
     #print(filename + " saved")
     
-    ## figure to show different decimated values
-    #fig, ax_arr = plt.subplots(2, int(bins/2), sharex=True, sharey=True, figsize=(20, 12))
-    #fig.suptitle("Lumma " + str(bins) + " Bins Representation", fontsize = 25)
-    #row=0
-    #col=0
-    #for band_i in range(0,bins):
-    #    print("band_i = " + str(band_i))
-    #    ax_arr[row,col].set_title("value == " + str(band_i + 1), fontsize = 20)
-    #    ax_arr[row,col].set_axis_off()
-    #    ax_arr[row,col].imshow(lumma_bands == band_i + 1)
-    #    col=col+1
-    #    if col == int(bins/2):
-    #        row = 1
-    #        col = 0
-    #
-    #plt.tight_layout()
-    #filename = os.path.join(output_dir, image_name + " Lumma " + str(bins) + " Bins Representation.png")
-    #plt.savefig(filename)
-    #print(filename + " saved")
-    #plt.show()
-    #plt.close()
-    #del fig
+    ## figure to show different lumma bins
+    if save_lumma_bins_representation:
+        fig, ax_arr = plt.subplots(2, int(bins/2) + 1, sharex=True, sharey=True, figsize=(20, 12))
+        fig.suptitle(image_name + " Lumma " + str(bins) + " Bins Representation", fontsize = 25)
+        row=0
+        col=0
+        for bin_i in range(0,bins + 2):
+            ax_arr[row,col].set_title("bin " + str(bin_i), fontsize = 20)
+            ax_arr[row,col].set_axis_off()
+            ax_arr[row,col].imshow(lumma_bins == bin_i)
+            col=col+1
+            if col == int(bins/2) + 1:
+                row = 1
+                col = 0
+        
+        plt.tight_layout()
+        filename = os.path.join(output_visualization_dir, image_name + " Lumma " + str(bins) + " Bins Representation.png")
+        plt.savefig(filename)
+        print(filename + " saved")
+        if show_images:
+            plt.show()
+        
+        plt.close()
+        del fig
     
     
-    # find band with most number of pixels
+    # find bin with most number of pixels
     
-    most_pixels_band = -1;
+    most_pixels_bin = -1;
     most_pixels = 0
-    for band_i in range(0,bins+1):
-        n_pixels = np.count_nonzero(lumma_bands == band_i)
-        #print("band = " + str(band_i) + "   n_pixels = " + str(n_pixels))
+    for bin_i in range(0,bins+1):
+        n_pixels = np.count_nonzero(lumma_bins == bin_i)
+        #print("bin = " + str(bin_i) + "   n_pixels = " + str(n_pixels))
         if n_pixels > most_pixels:
             most_pixels = n_pixels
-            most_pixels_band = band_i
+            most_pixels_bin = bin_i
     
-    print("\nmost_pixels_band = " + str(most_pixels_band) + "   most_pixels = " + str(most_pixels))
+    print("\nmost_pixels_bin = " + str(most_pixels_bin) + "   most_pixels = " + str(most_pixels))
     
     # find background
     
-    bg1 = lumma_bands == most_pixels_band
+    background_bin = most_pixels_bin
+    bg1 = lumma_bins == background_bin
     imshow(bg1, "bg1")
     bg2 = morphology.remove_small_objects(bg1, 5000)
     imshow(bg2, "bg2")
@@ -193,25 +201,25 @@ for f in files:
     #cv2.imwrite(filename, background_img, [cv2.IMWRITE_PNG_COMPRESSION , 0])
     
     
-    background_grown = pixels_within_distance(background, 20)
+    #background_grown = pixels_within_distance(background, 20)
     
     
     # find stroma
     
-    # 2 band prior to background band
-    stroma_band = most_pixels_band-1
-    stroma1 = lumma_bands == stroma_band
-    # add one more band behind
-    stroma1 = stroma1 + lumma_bands == stroma_band-1
+    # 2 bin prior to background bin
+    stroma_bin = background_bin-1
+    stroma1 = lumma_bins == stroma_bin
+    # add one more bin behind
+    stroma1 = stroma1 + lumma_bins == stroma_bin-1
     imshow(stroma1, "stroma1")
     # remove background pixels from stroma
     stroma2 = stroma1 * np.invert(background)
     imshow(stroma2, "stroma2")
     # remove pixels nearby background pixels from stroma
-    stroma3 = stroma2 * np.invert(background_grown)
-    imshow(stroma3, "stroma3")
+    #stroma3 = stroma2 * np.invert(background_grown)
+    #imshow(stroma3, "stroma3")
     # dilation
-    stroma4 = morphology.dilation(stroma3, morphology.square(20))
+    stroma4 = morphology.dilation(stroma2, morphology.square(20))
     imshow(stroma4, "stroma4")
     # remove small objects
     stroma5 = morphology.remove_small_objects(stroma4, 10000)
@@ -241,11 +249,12 @@ for f in files:
     # Find Epithelia
     
     # Anything not Background and not Stroma is Epithelia
-    # band prior to Stroma band
-    epithelia_band = stroma_band-2
-    epithelia1 = lumma_bands <= epithelia_band
+    # bin prior to Stroma bin
+    epithelia_bin = stroma_bin-2
+    # choosing three bins for epithelia, one bin under stroma
+    epithelia1 = lumma_bins <= epithelia_bin
     imshow(epithelia1, "epithelia1")
-    epithelia11 = lumma_bands > most_pixels_band
+    epithelia11 = lumma_bins > background_bin
     epithelia12 = epithelia11 + epithelia1
     imshow(epithelia12, "epithelia1")
     # remove background pixels from stroma
@@ -270,7 +279,7 @@ for f in files:
     
     
     # Save a segmentation visualization image
-    if save_output_visualization_image:
+    if save_rgb_stroma_epithelia_comparison:
         fig, ax_arr = plt.subplots(1, 3, sharex=True, sharey=True, figsize=(20, 12))
         fig.suptitle('Input - Stroma - Epithelia Segmentation Visualization', fontsize = 25)
         ax1, ax2, ax3 = ax_arr.ravel()
@@ -287,7 +296,9 @@ for f in files:
         filename = os.path.join(output_visualization_dir, image_name + ".png")
         plt.savefig(filename)
         print(filename + " saved")
-        #plt.show()
+        if show_images:
+            plt.show()
+        
         plt.close()
         del fig
     
