@@ -4,7 +4,7 @@
 
 ##       ENTER PATIENT IMAGE ID         ##
 
-patient_id = "h2114157 h&e"
+patient_id = "h2114154 h&e"
 
 ##########################################
 
@@ -39,39 +39,26 @@ if not os.path.isdir(data_dir):
     print("'" + data_dir + "' directory created. Please put patient image data.")
     exit()
 
-for root, dirs, files in os.walk(data_dir):
-    for f in files:
-        print("'" + os.path.join(extracted_dir, patient_id) + "' made empty.")
-        
-        os.unlink(os.path.join(root, f))
-        print("'" + os.path.join(extracted_dir, patient_id) + "' made empty.")
-    del userinp, root, dirs, files
-
-if not os.path.exists(os.path.join(data_dir, patient_id + ".tif")):
-    print("'" + os.path.join(data_dir, patient_id + ".tif") + "' does not exist.")
-    exit()
-
 if not os.path.isdir(extracted_dir):
     os.mkdir(extracted_dir)
-    print("'" + extracted_dir + "' directory created.")
+    print("extracted_dir: '" + extracted_dir + "' directory created.")
+    exit()
 
-if not os.path.isdir(os.path.join(extracted_dir, patient_id)):
-    os.mkdir(os.path.join(extracted_dir, patient_id))
-    print("'" + os.path.join(extracted_dir, patient_id) + "' directory created")
+if os.path.isdir(os.path.join(extracted_dir, patient_id)):
+    # delete current contents
+    for root, dirs, files in os.walk(os.path.join(extracted_dir, patient_id)):
+        for f in files:
+            print("Output dir: '" + os.path.join(extracted_dir, patient_id) + "' made empty.")
+        
+    del root, dirs, files
 else:
-    print("'" + os.path.join(extracted_dir, patient_id) + "' directory exists")
-    userinp = input("Overwrite data (y/n)?")
-    if userinp == "y":
-        for root, dirs, files in os.walk(os.path.join(extracted_dir, patient_id)):
-            for f in files:
-                os.unlink(os.path.join(root, f))
-            for d in dirs:
-                shutil.rmtree(os.path.join(root, d))
-        print("'" + os.path.join(extracted_dir, patient_id) + "' made empty.")
-        del userinp, root, dirs, files
-    else:
-        exit()
+    # create dir
+    os.mkdir(os.path.join(extracted_dir, patient_id))
+    print("Output dir: '" + os.path.join(extracted_dir, patient_id) + "' created.")
 
+if not os.path.exists(os.path.join(data_dir, patient_id + ".tif")):
+    print("Input file: '" + os.path.join(data_dir, patient_id + ".tif") + "' does not exist.")
+    exit()
 
 tif = tf.TiffFile(os.path.join(data_dir, patient_id + ".tif"))
 
@@ -135,7 +122,7 @@ for props in regions:
     #imshow(sub_image_downscaled, f"Label {props.label}:")
     sub_image = image[min_row*10:min(max_row*10,height), min_col*10:min(max_col*10,width)]
     filename = os.path.join(extracted_dir, patient_id, patient_id + " series[" + str(series_num) + "] img#" + str(props.label) + ".png")
-    cv2.imwrite(filename, sub_image, [cv2.IMWRITE_PNG_COMPRESSION , 0])
+    cv2.imwrite(filename, cv2.cvtColor(sub_image, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_PNG_COMPRESSION , 0])
     print("'" + filename + "' saved!")
     sub_img_lumma = sub_image[:, :, 0]
     filename = os.path.join(extracted_dir, patient_id, patient_id + " series[" + str(series_num) + "] img#" + str(props.label) + " Lumma.png")
