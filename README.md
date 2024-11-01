@@ -3,6 +3,9 @@
 Extracting Conjunctival melanocytic intraepithelial lesions (C-MIL) tissue from Eye tissue and making a Deep Learning Classification Model for Cancer Detection.  
 
 
+[Slides](https://docs.google.com/presentation/d/1eMNb1Jq0VQQtGIA3xF9gm0oATRtgcBYlBgqJnGiM9Pw/edit?usp=sharing)  
+
+
 ## Usage: python3 segmentation_algo.py
 
 ## User input:
