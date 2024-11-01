@@ -4,7 +4,7 @@
 
 ##       ENTER PATIENT IMAGE ID         ##
 
-overwrite_data = 'n'    # y/n
+patient_id = "h2114154 h&e"
 
 ##########################################
 
@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from skimage import morphology
 from skimage import filters
 import os
+import shutil
 
 # Plot the image
 def imshow(img, title):
@@ -40,113 +41,92 @@ if not os.path.isdir(data_dir):
 
 if not os.path.isdir(extracted_dir):
     os.mkdir(extracted_dir)
-    print("'" + extracted_dir + "' directory created.")
+    print("extracted_dir: '" + extracted_dir + "' directory created.")
+    exit()
 
-for root1, dirs1, files1 in os.walk(data_dir):
-    for f1 in files1:
-        patient_id = f1.split('.')[0]
-        #print("Current File: '" + os.path.join(root1, f1))
-        print("patient_id: '" + patient_id)
+if os.path.isdir(os.path.join(extracted_dir, patient_id)):
+    # delete current contents
+    for root, dirs, files in os.walk(os.path.join(extracted_dir, patient_id)):
+        for f in files:
+            print("Output dir: '" + os.path.join(extracted_dir, patient_id) + "' made empty.")
         
-        #if not os.path.exists(os.path.join(data_dir, patient_id + ".tif")):
-        #    print("'" + os.path.join(data_dir, patient_id + ".tif") + "' does not exist.")
-        #    exit()
-        
-        if not os.path.isdir(os.path.join(extracted_dir, patient_id)):
-            os.mkdir(os.path.join(extracted_dir, patient_id))
-            print("'" + os.path.join(extracted_dir, patient_id) + "' directory created")
-        else:
-            print("'" + os.path.join(extracted_dir, patient_id) + "' directory exists")
-            # overwrite_data = input("Overwrite data (y/n)?")
-            if overwrite_data == "y":
-                import shutil
-                for root, dirs, files in os.walk(os.path.join(extracted_dir, patient_id)):
-                    for f in files:
-                        os.unlink(os.path.join(root, f))
-                    for d in dirs:
-                        shutil.rmtree(os.path.join(root, d))
-                print("'" + os.path.join(extracted_dir, patient_id) + "' made empty.")
-                del root, dirs, files
-            else:
-                continue
-        
-        tif = tf.TiffFile(os.path.join(data_dir, patient_id + ".tif"))
-        
-        series_num = 0
-        image = tif.series[series_num].asarray()
-        
-        # sub image finding and cutting operation
-        
-        # Convert to grayscale
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        
-        # Get the original image dimensions
-        height, width = gray_image.shape[:2]
-        
-        # Define the new dimensions (downscaling by half)
-        downscale_factor = 10
-        new_width = int(width / downscale_factor)
-        new_height = int(height / downscale_factor)
-        
-        # Downscale the image using INTER_AREA interpolation
-        downscaled_image = cv2.resize(gray_image, (new_width, new_height), interpolation=cv2.INTER_AREA)
-        #imshow(downscaled_image, 'downscaled_image')
-        
-        
-        # gaussian filter
-        gaussian_smooth_gray = filters.gaussian(downscaled_image, sigma=10)#, preserve_range=True)
-        #imshow(gaussian_smooth, 'gaussian_smooth')
-        
-        # Compute a mask
-        g1 = morphology.remove_small_objects(gaussian_smooth_gray < 0.9, 500)
-        g2 = morphology.remove_small_holes(g1, 500)
-        #imshow(g2, 'g2')
-        
-        # dilation
-        dilated_g2 = morphology.dilation(g2, morphology.square(25))
-        #imshow(dilated_g2, 'dilated_g2')
-        g3 = morphology.remove_small_holes(dilated_g2, 5000)
-        g4 = morphology.remove_small_objects(g3, 10000)
-        #imshow(g4, 'color image 2D mask')
-        fig = plt.subplots(1, 1, sharex=True, sharey=True, figsize=(8, 12))
-        plt.imshow(g4)
-        plt.axis('off')
-        #plt.title('color image 2D mask', fontsize = 25)
-        plt.tight_layout()
-        filename = os.path.join(extracted_dir, patient_id, patient_id + " 2D mask.png")
-        plt.savefig(filename)
-        print("'" + filename + "' saved!")
-        plt.close()
-        del fig, g1, g2, g3
-        
-        # sub image finding and cutting operation
-        from skimage.measure import label, regionprops, regionprops_table
-        label_img = label(g4)
-        regions = regionprops(label_img)
-        
-        for props in regions:
-            min_row, min_col, max_row, max_col = props.bbox
-            area = (max_row-min_row)*(max_col-min_col)
-            print(f"Label {props.label}:")
-            print(f"  Min coordinates: ({min_row}, {min_col})")
-            print(f"  Max coordinates: ({max_row}, {max_col})")
-            if area > 2000000:
-                print("  over-sized area,                              SKIPPING!")
-                continue
-            elif area < 10000:
-                print("  under-sized area,                              SKIPPING!")
-                continue
-            sub_image_downscaled = downscaled_image[min_row:max_row, min_col:max_col]
-            #imshow(sub_image_downscaled, f"Label {props.label}:")
-            sub_image = image[min_row*10:min(max_row*10,height), min_col*10:min(max_col*10,width)]
-            filename = os.path.join(extracted_dir, patient_id, patient_id + " series[" + str(series_num) + "] img#" + str(props.label) + ".png")
-            cv2.imwrite(filename, sub_image, [cv2.IMWRITE_PNG_COMPRESSION , 0])
-            print("'" + filename + "' saved!")
-            sub_img_lumma = sub_image[:, :, 0]
-            filename = os.path.join(extracted_dir, patient_id, patient_id + " series[" + str(series_num) + "] img#" + str(props.label) + " Lumma.png")
-            cv2.imwrite(filename, sub_img_lumma, [cv2.IMWRITE_PNG_COMPRESSION , 0])
-            print("'" + filename + "' saved!")
-        
-        del sub_img_lumma, sub_image, label_img, regions, g4, gaussian_smooth_gray, downscaled_image, gray_image, image, tif
+    del root, dirs, files
+else:
+    # create dir
+    os.mkdir(os.path.join(extracted_dir, patient_id))
+    print("Output dir: '" + os.path.join(extracted_dir, patient_id) + "' created.")
+
+if not os.path.exists(os.path.join(data_dir, patient_id + ".tif")):
+    print("Input file: '" + os.path.join(data_dir, patient_id + ".tif") + "' does not exist.")
+    exit()
+
+tif = tf.TiffFile(os.path.join(data_dir, patient_id + ".tif"))
+
+series_num = 0
+image = tif.series[series_num].asarray()
+
+# sub image finding and cutting operation
+
+# Convert to grayscale
+gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+# Get the original image dimensions
+height, width = gray_image.shape[:2]
+
+# Define the new dimensions (downscaling by half)
+downscale_factor = 10
+new_width = int(width / downscale_factor)
+new_height = int(height / downscale_factor)
+
+# Downscale the image using INTER_AREA interpolation
+downscaled_image = cv2.resize(gray_image, (new_width, new_height), interpolation=cv2.INTER_AREA)
+#imshow(downscaled_image, 'downscaled_image')
+
+
+# gaussian filter
+gaussian_smooth_gray = filters.gaussian(downscaled_image, sigma=10)#, preserve_range=True)
+#imshow(gaussian_smooth, 'gaussian_smooth')
+
+# Compute a mask
+g1 = morphology.remove_small_objects(gaussian_smooth_gray < 0.9, 500)
+g2 = morphology.remove_small_holes(g1, 500)
+#imshow(g2, 'g2')
+
+# dilation
+dilated_g2 = morphology.dilation(g2, morphology.square(25))
+#imshow(dilated_g2, 'dilated_g2')
+g3 = morphology.remove_small_holes(dilated_g2, 5000)
+g4 = morphology.remove_small_objects(g3, 10000)
+#imshow(g4, 'color image 2D mask')
+fig = plt.subplots(1, 1, sharex=True, sharey=True, figsize=(8, 12))
+plt.imshow(g4)
+plt.axis('off')
+#plt.title('color image 2D mask', fontsize = 25)
+plt.tight_layout()
+filename = os.path.join(extracted_dir, patient_id, patient_id + " 2D mask.png")
+plt.savefig(filename)
+print("'" + filename + "' saved!")
+plt.close()
+
+# sub image finding and cutting operation
+from skimage.measure import label, regionprops, regionprops_table
+label_img = label(g4)
+regions = regionprops(label_img)
+
+for props in regions:
+    min_row, min_col, max_row, max_col = props.bbox
+    print(f"Label {props.label}:")
+    print(f"  Min coordinates: ({min_row}, {min_col})")
+    print(f"  Max coordinates: ({max_row}, {max_col})")
+    sub_image_downscaled = downscaled_image[min_row:max_row, min_col:max_col]
+    #imshow(sub_image_downscaled, f"Label {props.label}:")
+    sub_image = image[min_row*10:min(max_row*10,height), min_col*10:min(max_col*10,width)]
+    filename = os.path.join(extracted_dir, patient_id, patient_id + " series[" + str(series_num) + "] img#" + str(props.label) + ".png")
+    cv2.imwrite(filename, cv2.cvtColor(sub_image, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_PNG_COMPRESSION , 0])
+    print("'" + filename + "' saved!")
+    sub_img_lumma = sub_image[:, :, 0]
+    filename = os.path.join(extracted_dir, patient_id, patient_id + " series[" + str(series_num) + "] img#" + str(props.label) + " Lumma.png")
+    cv2.imwrite(filename, sub_img_lumma, [cv2.IMWRITE_PNG_COMPRESSION , 0])
+    print("'" + filename + "' saved!")
 
 print("done!")

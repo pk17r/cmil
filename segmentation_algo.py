@@ -3,22 +3,21 @@
 
 ##       SEGMENTATION ALGORITHM         ##
 
-show_images = 0
+show_images = 0                             # to display images in real-time
 save_intermediate_images = 0
-input_dir = "data/sheffield_h&e"
+input_dir = "data/sheffield_h&e"            # all files in here will be read, expected filenames: <filename>.tif
 #input_dir = "data"
-output_dir = "extracted/sheffield_h&e"
+output_dir = "extracted/sheffield_h&e"      # epithelia and stroma will be saved here
 #output_dir = "workingdir/segmented"
-run_over_all_images = 1
-overwrite_output = 1
-image_name = "h2114182 h&e_ROI_10"
-save_epithelia_and_stroma = 0
+run_over_all_images = 1                     # to run over all images in 'input_dir'
+overwrite_output = 1                        # to overwrite previous output
+image_name = "h2114186 h&e_ROI_3"	        # specific image to run with 'run_over_all_images = 0'
+save_epithelia_and_stroma = 1		        # to save epithelia and stroma output
 
 # visualizations
-output_visualization_dir = "extracted/sheffield_h&e/visualization"
+output_visualization_dir = "extracted/sheffield_h&e/visualization"      # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
 #output_visualization_dir = "workingdir/segmented"
-save_bins_representation = 0
-
+save_bins_representation = 0                # to save Lumma and Red Chroma Bins for visualization
 
 ##########################################
 
