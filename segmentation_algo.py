@@ -7,14 +7,14 @@ show_images = 0
 save_intermediate_images = 0
 input_dir = "data/sheffield_h&e"
 #input_dir = "extracted/h2114154 h&e"
-output_dir = "extracted/sheffield_h&e"
-#output_dir = "workingdir/segmented"
-run_over_all_images = 1
-image_name = "h2114186 h&e_ROI_3"
+#output_dir = "extracted/sheffield_h&e"
+output_dir = "workingdir/segmented"
+run_over_all_images = 0
+image_name = "h2114165  h&e_ROI_2"
 
 # visualizations
-output_visualization_dir = "extracted/sheffield_h&e/visualization"
-#output_visualization_dir = "workingdir/segmented"
+#output_visualization_dir = "extracted/sheffield_h&e/visualization"
+output_visualization_dir = "workingdir/segmented"
 save_rgb_stroma_epithelia_comparison = 1
 save_bins_representation = 0
 
@@ -313,47 +313,36 @@ for f in files:
     print("\nCr_binned: most_pixels_bin = " + str(most_pixels_bin) + "   most_pixels = " + str(most_pixels))
     
     
-    # all bins from 0 to 1 bin ahead of max pixels Cr bin
-    stroma_bin = most_pixels_bin + 1
+    # all bins from 0 to max pixels Cr bin
+    stroma_bin = most_pixels_bin
     stroma1 = Cr_binned <= stroma_bin
     imshow(stroma1, "stroma1")
     # remove background pixels from stroma
     stroma2 = stroma1 * np.invert(background)
     imshow(stroma2, "stroma2")
     # remove small objects
-    stroma3 = morphology.remove_small_objects(stroma2, 10000)
+    stroma3 = morphology.remove_small_objects(stroma2, 5000)
     imshow(stroma3, "stroma3")
     # remove small holes
-    stroma4 = morphology.remove_small_holes(stroma3, 10000)
+    stroma4 = morphology.remove_small_holes(stroma3, 5000)
     imshow(stroma4, "stroma4")
     # dilation
     stroma5 = morphology.dilation(stroma4, morphology.square(6))
     imshow(stroma5, "stroma5")
     # remove small holes
-    stroma = morphology.remove_small_holes(stroma5, 20000)
-    print('stroma found')
-    imshow(stroma, "stroma")
-    if save_intermediate_images:
-        filename = os.path.join(output_dir, image_name + " Lumma Stroma Mask.png")
-        cv2.imwrite(filename, stroma.astype(np.uint8)*255, [cv2.IMWRITE_PNG_COMPRESSION , 0])
-        print(filename + " saved")
-    
-    # Apply the stroma mask to image
-    stroma6 = stroma.astype(np.uint8) * 255
-    stroma_img = cv2.bitwise_and(img_rgb,img_rgb,mask = stroma6)
-    imshow(stroma_img, "stroma_img")
-    filename = os.path.join(output_dir, image_name + " Stroma.png")
-    cv2.imwrite(filename, cv2.cvtColor(stroma_img, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_PNG_COMPRESSION , 0])
-    print(filename + " saved")
-    
+    stroma6 = morphology.remove_small_holes(stroma5, 5000)
+    imshow(stroma6, "stroma6")
+    print('definite stroma found')
+    stroma = stroma6
     
     
     # find epithelia
     
-    # epithelia is the first two bins that ahead of stroma in Red Chroma
-    epithelia_bin = stroma_bin + 1
+    # epithelia is the first three bins that are 1 bin ahead of stroma in Red Chroma
+    epithelia_bin = stroma_bin + 2
     epithelia1 = Cr_binned == epithelia_bin
     epithelia1 = epithelia1 + (Cr_binned == epithelia_bin + 1)
+    epithelia1 = epithelia1 + (Cr_binned == epithelia_bin + 2)
     imshow(epithelia1, "epithelia1")
     # remove background pixels from epithelia
     epithelia2 = epithelia1 * np.invert(background)
@@ -361,14 +350,14 @@ for f in files:
     # remove stroma pixels from epithelia
     epithelia2 = epithelia2 * np.invert(stroma)
     imshow(epithelia2, "epithelia2")
-    # remove small objects
-    epithelia3 = morphology.remove_small_objects(epithelia2, 10000)
+    # remove very small objects
+    epithelia3 = morphology.remove_small_objects(epithelia2, 500)
     imshow(epithelia3, "epithelia3")
     # remove small holes
     epithelia4 = morphology.remove_small_holes(epithelia3, 10000)
     imshow(epithelia4, "epithelia4")
     # dilation
-    epithelia5 = morphology.dilation(epithelia4, morphology.square(6))
+    epithelia5 = morphology.dilation(epithelia4, morphology.square(10))
     imshow(epithelia5, "epithelia5")
     # remove small holes
     epithelia6 = morphology.remove_small_holes(epithelia5, 20000)
@@ -390,6 +379,38 @@ for f in files:
     filename = os.path.join(output_dir, image_name + " Epithelia.png")
     cv2.imwrite(filename, cv2.cvtColor(epithelia_img, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_PNG_COMPRESSION , 0])
     print(filename + " saved")
+    
+    
+    # expanded stroma
+    
+    # remove small holes
+    stroma4 = morphology.remove_small_holes(stroma2, 10000)
+    imshow(stroma4, "stroma4")
+    # dilation
+    stroma5 = morphology.dilation(stroma4, morphology.square(10))
+    imshow(stroma5, "stroma5")
+    # remove small holes
+    stroma6 = morphology.remove_small_holes(stroma5, 20000)
+    imshow(stroma6, "stroma6")
+    # remove background pixels from expanded stroma
+    stroma7 = stroma6 * np.invert(background)
+    # remove stroma pixels from expanded stroma
+    stroma = stroma7 * np.invert(epithelia)
+    print('stroma expanded')
+    imshow(stroma, "stroma")
+    if save_intermediate_images:
+        filename = os.path.join(output_dir, image_name + " Stroma Mask.png")
+        cv2.imwrite(filename, stroma.astype(np.uint8)*255, [cv2.IMWRITE_PNG_COMPRESSION , 0])
+        print(filename + " saved")
+    
+    # Apply the stroma mask to image
+    stroma8 = stroma.astype(np.uint8) * 255
+    stroma_img = cv2.bitwise_and(img_rgb,img_rgb,mask = stroma8)
+    imshow(stroma_img, "stroma_img")
+    filename = os.path.join(output_dir, image_name + " Stroma.png")
+    cv2.imwrite(filename, cv2.cvtColor(stroma_img, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_PNG_COMPRESSION , 0])
+    print(filename + " saved")
+    
     
     
     ## find stroma
