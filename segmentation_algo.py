@@ -9,9 +9,9 @@ save_intermediate_images = 0                    # save R-G-B and Y-Cb-Cr Channel
 input_dir = "data/liverpool_h&e"
 #input_dir = "data"
 #output_dir = "extracted/sheffield_h&e"         # epithelia and stroma will be saved here
-#output_dir = "extracted/liverpool_h&e"
-output_dir = "workingdir/segmented"
-run_over_all_images = 0                         # to run over all images in 'input_dir'
+output_dir = "extracted/liverpool_h&e"
+#output_dir = "workingdir/segmented"
+run_over_all_images = 1                         # to run over all images in 'input_dir'
 overwrite_output = 0                            # to overwrite previous output
 image_name = "h1810898A  h&e_ROI_1"             # specific image to run with 'run_over_all_images = 0'
 save_epithelia_and_stroma = 0                   # to save epithelia and stroma output
@@ -19,9 +19,9 @@ save_epithelia_and_stroma = 0                   # to save epithelia and stroma o
 # visualizations
 
 #output_visualization_dir = "extracted/sheffield_h&e/visualization"         # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
-#output_visualization_dir = "extracted/liverpool_h&e/visualization"
-output_visualization_dir = "workingdir/segmented"
-save_bins_representation = 1                    # to save Lumma and Red Chroma Bins for visualization
+output_visualization_dir = "extracted/liverpool_h&e/visualization"
+#output_visualization_dir = "workingdir/segmented"
+save_bins_representation = 0                    # to save Lumma and Red Chroma Bins for visualization
 
 ##########################################
 
@@ -134,9 +134,9 @@ for f in files:
     img_ycrcb = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2YCrCb)
     #imshow(img_ycrcb, 'img_ycrcb')
     if save_bins_representation or show_images:
-        fig, ax_arr = plt.subplots(1, 4, sharex=True, sharey=True, figsize=(20, 12))
-        fig.suptitle('RGB888 - Y - Cb - Cr', fontsize = 25)
-        ax1, ax2, ax3, ax4 = ax_arr.ravel()
+        fig, ax_arr = plt.subplots(1, 5, sharex=True, sharey=True, figsize=(20, 12))
+        fig.suptitle('RGB888 - Y - Cb - Cr - Cg', fontsize = 25)
+        ax1, ax2, ax3, ax4, ax5 = ax_arr.ravel()
         ax1.imshow(img_rgb)
         ax1.set_title('RGB888', fontsize = 20)
         ax1.set_axis_off()
@@ -149,6 +149,16 @@ for f in files:
         ax4.imshow(img_ycrcb[:,:,2])
         ax4.set_title('Cr Channel', fontsize = 20)
         ax4.set_axis_off()
+        # Green Difference Chroma
+        # img_Cg = Y - 0.299 * Y - 0.587 * Cr - 0.114 * Cb
+        img_Cg = img_ycrcb[:,:,0] - 0.299 * img_ycrcb[:,:,0] - 0.587 * img_ycrcb[:,:,2] - 0.114 * img_ycrcb[:,:,1]
+        #filename = os.path.join(output_visualization_dir, image_name + " Green Chroma.png")
+        #cv2.imwrite(filename, img_Cg, [cv2.IMWRITE_PNG_COMPRESSION , 0])
+        #imshow(img_Cg, "img_Cg")
+        #print(filename + " saved")
+        ax5.imshow(img_Cg)
+        ax5.set_title('Cg Channel', fontsize = 20)
+        ax5.set_axis_off()
         plt.tight_layout()
         if save_bins_representation:
             filename = os.path.join(output_visualization_dir, image_name + " YCbCr Channels.png")
@@ -159,7 +169,7 @@ for f in files:
             plt.show()
         
         plt.close()
-        del fig
+        del fig, img_Cg
     
     #img_lumma = img_ycrcb[:,:,0]
     imshow(img_ycrcb[:,:,0], "img_lumma")
@@ -384,6 +394,58 @@ for f in files:
     #    del fig
     
     
+    ## define binning in Green Channel
+    #green_bins_n = 20
+    #divisor = (np.floor(255 / green_bins_n).astype(np.uint8))
+    #
+    ## decimate Green Channel into green_bins_n
+    ##green_binned = (np.floor(img_rgb[:,:,1]/divisor)).astype(np.uint8)
+    #Cg_binned = (np.floor(img_Cg/divisor)).astype(np.uint8)
+    #filename = os.path.join(output_visualization_dir, image_name + " Green Chroma " + str(green_bins_n) + " Bins.png")
+    #cv2.imwrite(filename, Cg_binned * divisor, [cv2.IMWRITE_PNG_COMPRESSION , 0])
+    #imshow(Cg_binned, "Cg_binned " + str(green_bins_n))
+    #print(filename + " saved")
+    #
+    ### figure to show different Green Channel bins
+    #if save_bins_representation:
+    #    fig, ax_arr = plt.subplots(2, int(green_bins_n/2) + 1, sharex=True, sharey=True, figsize=(20, 12))
+    #    fig.suptitle(image_name + " Green Chroma " + str(green_bins_n) + " Bins Representation", fontsize = 25)
+    #    row=0
+    #    col=0
+    #    for bin_i in range(0,green_bins_n + 2):
+    #        ax_arr[row,col].set_title("bin " + str(bin_i), fontsize = 20)
+    #        ax_arr[row,col].set_axis_off()
+    #        ax_arr[row,col].imshow(Cg_binned == bin_i)
+    #        col=col+1
+    #        if col == int(green_bins_n/2) + 1:
+    #            row = 1
+    #            col = 0
+    #    
+    #    plt.tight_layout()
+    #    filename = os.path.join(output_visualization_dir, image_name + " Green Chroma " + str(green_bins_n) + " Bins Representation.png")
+    #    plt.savefig(filename)
+    #    print(filename + " saved")
+    #    if show_images:
+    #        plt.show()
+    #    
+    #    plt.close()
+    #    del fig
+    #
+    #
+    ## find bin with most number of pixels
+    #
+    #most_pixels_bin = -1;
+    #most_pixels = 0
+    #for bin_i in range(0,green_bins_n+1):
+    #    n_pixels = np.count_nonzero(Cg_binned == bin_i)
+    #    #print("bin = " + str(bin_i) + "   n_pixels = " + str(n_pixels))
+    #    if n_pixels > most_pixels:
+    #        most_pixels = n_pixels
+    #        most_pixels_bin = bin_i
+    #
+    #print("\ngreen_binned: most_pixels_bin = " + str(most_pixels_bin) + "   most_pixels = " + str(most_pixels))
+    
+    
     # Find Epithelia
     
     # 1-line easy approximation: :)
@@ -403,13 +465,18 @@ for f in files:
     # remove stroma pixels from epithelia
     epithelia = epithelia * np.invert(stroma)
     imshow(epithelia, "epithelia3")
+    # add Bins from Lumma - background bin * 0.6 and two below
+    epithelia = epithelia + (lumma_binned == int(background_bin * 0.6))
+    epithelia = epithelia + (lumma_binned == int(background_bin * 0.6 - 1))
+    epithelia = epithelia + (lumma_binned == int(background_bin * 0.6 - 2))
+    imshow(epithelia, "epithelia3lu")
     # remove blue ink drop region
     #blue_ink = img_ycrcb[:,:,1] < 120
     #imshow(blue_ink, "blue_ink")
     epithelia = epithelia * np.invert(img_ycrcb[:,:,1] < 120)
     imshow(epithelia, "epithelia4")
     # dilation
-    epithelia = morphology.dilation(epithelia, morphology.square(2))
+    epithelia = morphology.dilation(epithelia, morphology.square(3))
     imshow(epithelia, "epithelia5")
     # remove very small objects
     epithelia = morphology.remove_small_objects(epithelia, 500)
