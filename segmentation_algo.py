@@ -5,21 +5,21 @@
 
 show_images = 0                                 # to display images in real-time
 save_intermediate_images = 0                    # save R-G-B and Y-Cb-Cr Channels
-#input_dir = "data/sheffield_h&e"               # all files in here will be read, expected filenames: <filename>.tif
-input_dir = "data/liverpool_h&e"
+input_dir = "data/sheffield_h&e"               # all files in here will be read, expected filenames: <filename>.tif
+#input_dir = "data/liverpool_h&e"
 #input_dir = "data"
-#output_dir = "extracted/sheffield_h&e"         # epithelia and stroma will be saved here
-output_dir = "extracted/liverpool_h&e"
+output_dir = "extracted/sheffield_h&e"         # epithelia and stroma will be saved here
+#output_dir = "extracted/liverpool_h&e"
 #output_dir = "workingdir/segmented"
 run_over_all_images = 1                         # to run over all images in 'input_dir'
 overwrite_output = 0                            # to overwrite previous output
 image_name = "h1810898A  h&e_ROI_1"             # specific image to run with 'run_over_all_images = 0'
-save_epithelia_and_stroma = 0                   # to save epithelia and stroma output
+save_epithelia_and_stroma = 1                   # to save epithelia and stroma output
 
 # visualizations
 
-#output_visualization_dir = "extracted/sheffield_h&e/visualization"         # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
-output_visualization_dir = "extracted/liverpool_h&e/visualization"
+output_visualization_dir = "extracted/sheffield_h&e/visualization"         # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
+#output_visualization_dir = "extracted/liverpool_h&e/visualization"
 #output_visualization_dir = "workingdir/segmented"
 save_bins_representation = 0                    # to save Lumma and Red Chroma Bins for visualization
 
@@ -465,18 +465,19 @@ for f in files:
     # remove stroma pixels from epithelia
     epithelia = epithelia * np.invert(stroma)
     imshow(epithelia, "epithelia3")
-    # add Bins from Lumma - background bin * 0.6 and two below
-    epithelia = epithelia + (lumma_binned == int(background_bin * 0.6))
-    epithelia = epithelia + (lumma_binned == int(background_bin * 0.6 - 1))
-    epithelia = epithelia + (lumma_binned == int(background_bin * 0.6 - 2))
-    imshow(epithelia, "epithelia3lu")
+    ## add Bins from Lumma - background bin * 0.6 and two below
+    #epithelia = epithelia + (lumma_binned == int(background_bin * 0.6))
+    #epithelia = epithelia + (lumma_binned == int(background_bin * 0.6 - 1))
+    #epithelia = epithelia + (lumma_binned == int(background_bin * 0.6 - 2))
+    #imshow(epithelia, "epithelia3lu")
     # remove blue ink drop region
     #blue_ink = img_ycrcb[:,:,1] < 120
     #imshow(blue_ink, "blue_ink")
     epithelia = epithelia * np.invert(img_ycrcb[:,:,1] < 120)
     imshow(epithelia, "epithelia4")
     # dilation
-    epithelia = morphology.dilation(epithelia, morphology.square(3))
+    #epithelia = morphology.dilation(epithelia, morphology.square(3))
+    epithelia = morphology.dilation(epithelia, morphology.square(2))
     imshow(epithelia, "epithelia5")
     # remove very small objects
     epithelia = morphology.remove_small_objects(epithelia, 500)
