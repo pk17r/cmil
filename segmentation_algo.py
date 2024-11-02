@@ -3,21 +3,25 @@
 
 ##       SEGMENTATION ALGORITHM         ##
 
-show_images = 0                             # to display images in real-time
-save_intermediate_images = 0
-input_dir = "data/sheffield_h&e"            # all files in here will be read, expected filenames: <filename>.tif
+show_images = 0                                 # to display images in real-time
+save_intermediate_images = 0                    # save R-G-B and Y-Cb-Cr Channels
+#input_dir = "data/sheffield_h&e"               # all files in here will be read, expected filenames: <filename>.tif
+input_dir = "data/liverpool_h&e"
 #input_dir = "data"
-output_dir = "extracted/sheffield_h&e"      # epithelia and stroma will be saved here
-#output_dir = "workingdir/segmented"
-run_over_all_images = 1                     # to run over all images in 'input_dir'
-overwrite_output = 1                        # to overwrite previous output
-image_name = "h2114186 h&e_ROI_3"	        # specific image to run with 'run_over_all_images = 0'
-save_epithelia_and_stroma = 1		        # to save epithelia and stroma output
+#output_dir = "extracted/sheffield_h&e"         # epithelia and stroma will be saved here
+#output_dir = "extracted/liverpool_h&e"
+output_dir = "workingdir/segmented"
+run_over_all_images = 0                         # to run over all images in 'input_dir'
+overwrite_output = 0                            # to overwrite previous output
+image_name = "h1810898A  h&e_ROI_1"             # specific image to run with 'run_over_all_images = 0'
+save_epithelia_and_stroma = 0                   # to save epithelia and stroma output
 
 # visualizations
-output_visualization_dir = "extracted/sheffield_h&e/visualization"      # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
-#output_visualization_dir = "workingdir/segmented"
-save_bins_representation = 0                # to save Lumma and Red Chroma Bins for visualization
+
+#output_visualization_dir = "extracted/sheffield_h&e/visualization"         # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
+#output_visualization_dir = "extracted/liverpool_h&e/visualization"
+output_visualization_dir = "workingdir/segmented"
+save_bins_representation = 1                    # to save Lumma and Red Chroma Bins for visualization
 
 ##########################################
 
@@ -27,7 +31,6 @@ save_bins_representation = 0                # to save Lumma and Red Chroma Bins 
 import sys
 sys.path.append('/usr/local/lib/python3.8/site-packages')
 import cv2
-import tifffile as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -91,17 +94,15 @@ for f in files:
     input_filepath = os.path.join(input_dir, image_name)
     print(input_filepath + ".tif")
     
-    if overwrite_output == 0:
+    if overwrite_output == 0 and run_over_all_images:
         if os.path.exists(os.path.join(output_visualization_dir, image_name + ".png")):
             continue
     
     
-    #Image loading
-    tif = tf.TiffFile(input_filepath + ".tif")
-    img_rgb = tif.series[0].asarray()
-    #img_rgb = cv2.imread(input_filepath + ".png")
-    #img_rgb = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2RGB)
-    #imshow(img_rgb, 'img_rgb')
+    # Load Image
+    img_rgb = cv2.imread(input_filepath + ".tif")
+    img_rgb = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2RGB)
+    imshow(img_rgb, 'img_rgb')
     if save_bins_representation or show_images:
         fig, ax_arr = plt.subplots(1, 4, sharex=True, sharey=True, figsize=(20, 12))
         fig.suptitle('RGB - R - G - B', fontsize = 25)
@@ -134,10 +135,10 @@ for f in files:
     #imshow(img_ycrcb, 'img_ycrcb')
     if save_bins_representation or show_images:
         fig, ax_arr = plt.subplots(1, 4, sharex=True, sharey=True, figsize=(20, 12))
-        fig.suptitle('YCbCr - Y - Cb - Cr', fontsize = 25)
+        fig.suptitle('RGB888 - Y - Cb - Cr', fontsize = 25)
         ax1, ax2, ax3, ax4 = ax_arr.ravel()
-        ax1.imshow(img_ycrcb)
-        ax1.set_title('YCbCr', fontsize = 20)
+        ax1.imshow(img_rgb)
+        ax1.set_title('RGB888', fontsize = 20)
         ax1.set_axis_off()
         ax2.imshow(img_ycrcb[:,:,0])
         ax2.set_title('Y Channel', fontsize = 20)
@@ -160,8 +161,8 @@ for f in files:
         plt.close()
         del fig
     
-    img_lumma = img_ycrcb[:,:,0]
-    imshow(img_lumma, "img_lumma")
+    #img_lumma = img_ycrcb[:,:,0]
+    imshow(img_ycrcb[:,:,0], "img_lumma")
     
     #img_gray= cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
     #imshow(img_gray, "img_gray")
@@ -175,7 +176,7 @@ for f in files:
     #ax2.imshow(img_gray)
     #ax2.set_title('RGB888_to_Grayscale', fontsize = 20)
     #ax2.set_axis_off()
-    #ax3.imshow(img_lumma)
+    #ax3.imshow(img_ycrcb[:,:,0])
     #ax3.set_title('YCbCr_Y(Luminance)', fontsize = 20)
     #ax3.set_axis_off()
     #plt.tight_layout()
@@ -193,7 +194,7 @@ for f in files:
     divisor = (np.floor(255 / lumma_bins_n).astype(np.uint8))
     
     # decimate lumma image into lumma_bins_n
-    lumma_binned = (np.floor(img_lumma/divisor)).astype(np.uint8)
+    lumma_binned = (np.floor(img_ycrcb[:,:,0]/divisor)).astype(np.uint8)
     #filename = os.path.join(output_visualization_dir, image_name + " Lumma " + str(lumma_bins_n) + " Bins.png")
     #cv2.imwrite(filename, lumma_binned * divisor, [cv2.IMWRITE_PNG_COMPRESSION , 0])
     #imshow(lumma_binned, "lumma_binned " + str(lumma_bins_n))
@@ -241,11 +242,11 @@ for f in files:
     # find background
     
     background_bin = most_pixels_bin
-    bg1 = lumma_binned == background_bin
-    imshow(bg1, "bg1")
-    bg2 = morphology.remove_small_objects(bg1, 5000)
-    imshow(bg2, "bg2")
-    background = morphology.remove_small_holes(bg2, 10000)
+    background = lumma_binned == background_bin
+    imshow(background, "bg1 bin=" + str(most_pixels_bin))
+    background = morphology.remove_small_objects(background, 5000)
+    imshow(background, "bg2")
+    background = morphology.remove_small_holes(background, 10000)
     print('background found')
     imshow(background, "background")
     if save_intermediate_images:
@@ -255,18 +256,17 @@ for f in files:
     
     
     ## Apply the background mask to image
-    #bg3 = background.astype(np.uint8) * 255
-    #background_img = cv2.bitwise_and(img_rgb, img_rgb, mask = bg3)
+    #background_img = cv2.bitwise_and(img_rgb, img_rgb, mask = (background.astype(np.uint8) * 255))
     #imshow(background_img, "background_img")
     #filename = os.path.join(output_dir, image_name + " Lumma Background Image.png")
     #cv2.imwrite(filename, background_img, [cv2.IMWRITE_PNG_COMPRESSION , 0])
+    #del background_img
     
     #background_grown = pixels_within_distance(background, 20)
     
     # get Red Chroma channel
 
-    img_Cr = img_ycrcb[:,:,2]
-    imshow(img_Cr, "img_Cr")
+    imshow(img_ycrcb[:,:,2], "img_Cr")
     
     # we will get epithelia from Red Chroma channel
     
@@ -275,7 +275,7 @@ for f in files:
     divisor = (np.floor(255 / Cr_bins_n).astype(np.uint8))
     
     # decimate Red Chroma image into Cr_bins_n
-    Cr_binned = (np.floor(img_Cr/divisor)).astype(np.uint8)
+    Cr_binned = (np.floor(img_ycrcb[:,:,2]/divisor)).astype(np.uint8)
     #filename = os.path.join(output_visualization_dir, image_name + " Red Chroma " + str(Cr_bins_n) + " Bins.png")
     #cv2.imwrite(filename, Cr_binned * divisor, [cv2.IMWRITE_PNG_COMPRESSION , 0])
     #imshow(Cr_binned, "Cr_binned " + str(Cr_bins_n))
@@ -324,51 +324,35 @@ for f in files:
     
     # Stroma is three bins from  max pixels Cr bin - 2 to max pixels Cr bin
     stroma_bin = most_pixels_bin
-    stroma1 = Cr_binned == stroma_bin
-    stroma1 = stroma1 + (Cr_binned == stroma_bin - 1)
-    stroma1 = stroma1 + (Cr_binned == stroma_bin - 2)
-    imshow(stroma1, "stroma1")
+    stroma = Cr_binned == stroma_bin
+    stroma = stroma + (Cr_binned == stroma_bin - 1)
+    stroma = stroma + (Cr_binned == stroma_bin - 2)
+    imshow(stroma, "stroma1")
     # remove background pixels from stroma
-    stroma2 = stroma1 * np.invert(background)
-    imshow(stroma2, "stroma2")
-    
+    stroma = stroma * np.invert(background)
+    imshow(stroma, "stroma2")
     # dilation
-    stroma3 = morphology.dilation(stroma2, morphology.square(3))
-    imshow(stroma3, "stroma3")
+    stroma = morphology.dilation(stroma, morphology.square(3))
+    imshow(stroma, "stroma3")
     # remove small objects
-    stroma4 = morphology.remove_small_objects(stroma3, 1000)
-    imshow(stroma4, "stroma4")
-    
-    
-    ## remove small objects
-    #stroma3 = morphology.remove_small_objects(stroma2, 500)
-    #imshow(stroma3, "stroma3")
-    ## remove small holes
-    #stroma4 = morphology.remove_small_holes(stroma3, 2000)
-    #imshow(stroma4, "stroma4")
-    ## dilation
-    #stroma5 = morphology.dilation(stroma4, morphology.square(5))
-    #imshow(stroma5, "stroma5")
-    ## remove small holes
-    #stroma6 = morphology.remove_small_holes(stroma5, 5000)
-    #imshow(stroma6, "stroma6")
+    stroma = morphology.remove_small_objects(stroma, 1000)
+    imshow(stroma, "definite stroma")
     print('definite stroma found')
-    stroma = stroma4
     
     
     # Mark regions with blue ink drop for removal from epithelia
     
     #img_Cb = img_ycrcb[:,:,1]
     #imshow(img_Cb, "img_Cb")
-    blue_ink = img_ycrcb[:,:,1] < 120
-    imshow(blue_ink, "blue_ink")
+    #blue_ink = img_ycrcb[:,:,1] < 120
+    #imshow(blue_ink, "blue_ink")
     
     ## define binning in Blue Chroma image
     #Cb_bins_n = 10
     #divisor = (np.floor(255 / Cb_bins_n).astype(np.uint8))
     #
     ## decimate Blue Chroma image into Cb_bins_n
-    #Cb_binned = (np.floor(img_Cb/divisor)).astype(np.uint8)
+    #Cb_binned = (np.floor(img_ycrcb[:,:,1]/divisor)).astype(np.uint8)
     ##filename = os.path.join(output_visualization_dir, image_name + " Blue Chroma " + str(Cb_bins_n) + " Bins.png")
     ##cv2.imwrite(filename, Cb_binned * divisor, [cv2.IMWRITE_PNG_COMPRESSION , 0])
     ##imshow(Cb_binned, "Cb_binned " + str(Cb_bins_n))
@@ -407,33 +391,35 @@ for f in files:
     
     # Epithelia is the first five bins that are 1 bin ahead of stroma in Red Chroma
     epithelia_bin = stroma_bin + 2
-    epithelia1 = Cr_binned == epithelia_bin
-    epithelia1 = epithelia1 + (Cr_binned == epithelia_bin + 1)
-    epithelia1 = epithelia1 + (Cr_binned == epithelia_bin + 2)
-    epithelia1 = epithelia1 + (Cr_binned == epithelia_bin + 3)
-    epithelia1 = epithelia1 + (Cr_binned == epithelia_bin + 4)
-    imshow(epithelia1, "epithelia1")
+    epithelia = Cr_binned == epithelia_bin
+    epithelia = epithelia + (Cr_binned == epithelia_bin + 1)
+    epithelia = epithelia + (Cr_binned == epithelia_bin + 2)
+    epithelia = epithelia + (Cr_binned == epithelia_bin + 3)
+    epithelia = epithelia + (Cr_binned == epithelia_bin + 4)
+    imshow(epithelia, "epithelia1")
     # remove background pixels from epithelia
-    epithelia2 = epithelia1 * np.invert(background)
-    imshow(epithelia2, "epithelia2")
+    epithelia = epithelia * np.invert(background)
+    imshow(epithelia, "epithelia2")
     # remove stroma pixels from epithelia
-    epithelia2 = epithelia2 * np.invert(stroma)
-    imshow(epithelia2, "epithelia2")
+    epithelia = epithelia * np.invert(stroma)
+    imshow(epithelia, "epithelia3")
     # remove blue ink drop region
-    epithelia2 = epithelia2 * np.invert(blue_ink)
-    imshow(epithelia2, "epithelia2")
+    #blue_ink = img_ycrcb[:,:,1] < 120
+    #imshow(blue_ink, "blue_ink")
+    epithelia = epithelia * np.invert(img_ycrcb[:,:,1] < 120)
+    imshow(epithelia, "epithelia4")
     # dilation
-    epithelia3 = morphology.dilation(epithelia2, morphology.square(2))
-    imshow(epithelia3, "epithelia3")
+    epithelia = morphology.dilation(epithelia, morphology.square(2))
+    imshow(epithelia, "epithelia5")
     # remove very small objects
-    epithelia3 = morphology.remove_small_objects(epithelia3, 500)
-    imshow(epithelia3, "epithelia3")
+    epithelia = morphology.remove_small_objects(epithelia, 500)
+    imshow(epithelia, "epithelia6")
     # remove small holes
-    epithelia4 = morphology.remove_small_holes(epithelia3, 10000)
-    imshow(epithelia4, "epithelia4")
+    epithelia = morphology.remove_small_holes(epithelia, 10000)
+    imshow(epithelia, "epithelia7")
     # find out epithelia information at current state
-    n_epithelia_pixels = np.count_nonzero(epithelia4)
-    percent_epithelia_pixels = n_epithelia_pixels / (epithelia4.shape[0] * epithelia4.shape[1])
+    n_epithelia_pixels = np.count_nonzero(epithelia)
+    percent_epithelia_pixels = n_epithelia_pixels / (epithelia.shape[0] * epithelia.shape[1])
     print("percent_epithelia_pixels = " + str(percent_epithelia_pixels))
     small_obj_size_to_remove = 10000
     if percent_epithelia_pixels < 0.01:
@@ -443,17 +429,13 @@ for f in files:
     
     print("small_obj_size_to_remove = " + str(small_obj_size_to_remove))
     # remove small objects
-    epithelia4 = morphology.remove_small_objects(epithelia4, small_obj_size_to_remove)
-    imshow(epithelia4, "epithelia4")
+    epithelia = morphology.remove_small_objects(epithelia, small_obj_size_to_remove)
+    imshow(epithelia, "epithelia8")
     # dilation
-    epithelia5 = morphology.dilation(epithelia4, morphology.square(10))
-    imshow(epithelia5, "epithelia5")
+    epithelia = morphology.dilation(epithelia, morphology.square(10))
+    imshow(epithelia, "epithelia9")
     # remove small holes
-    epithelia = morphology.remove_small_holes(epithelia5, 20000)
-    #imshow(epithelia, "epithelia")
-    # again remove background and stroma from epithelia
-    #epithelia = epithelia6 * np.invert(background)
-    #epithelia = epithelia * np.invert(stroma)
+    epithelia = morphology.remove_small_holes(epithelia, 20000)
     print('epithelia found')
     imshow(epithelia, "epithelia")
     if save_intermediate_images:
@@ -463,8 +445,7 @@ for f in files:
     
     
     # Apply the epithelia mask to image
-    epithelia_m = epithelia.astype(np.uint8) * 255
-    epithelia_img = cv2.bitwise_and(img_rgb,img_rgb,mask = epithelia_m)
+    epithelia_img = cv2.bitwise_and(img_rgb,img_rgb,mask = (epithelia.astype(np.uint8) * 255))
     imshow(epithelia_img, "epithelia_img")
     if save_epithelia_and_stroma:
         filename = os.path.join(output_dir, image_name + " Epithelia.png")
@@ -472,21 +453,30 @@ for f in files:
         print(filename + " saved")
     
     
-    # expanded stroma
+    # Expanded Stroma
     
+    # Expanded Stroma is four bins from  max pixels Cr bin - 2 to max pixels Cr bin + 1
+    stroma = Cr_binned == stroma_bin + 1
+    stroma = stroma + (Cr_binned == stroma_bin)
+    stroma = stroma + (Cr_binned == stroma_bin - 1)
+    stroma = stroma + (Cr_binned == stroma_bin - 2)
+    imshow(stroma, "stroma1")
+    # remove background pixels from stroma
+    stroma = stroma * np.invert(background)
+    imshow(stroma, "stroma2")
     # remove small holes
-    stroma4 = morphology.remove_small_holes(stroma2, 10000)
-    imshow(stroma4, "stroma4")
+    stroma = morphology.remove_small_holes(stroma, 10000)
+    imshow(stroma, "stroma3")
     # dilation
-    stroma5 = morphology.dilation(stroma4, morphology.square(10))
-    imshow(stroma5, "stroma5")
+    stroma = morphology.dilation(stroma, morphology.square(10))
+    imshow(stroma, "stroma4")
     # remove small holes
-    stroma6 = morphology.remove_small_holes(stroma5, 20000)
-    imshow(stroma6, "stroma6")
+    stroma = morphology.remove_small_holes(stroma, 20000)
+    imshow(stroma, "stroma5")
     # remove background pixels from expanded stroma
-    stroma7 = stroma6 * np.invert(background)
+    stroma = stroma * np.invert(background)
     # remove stroma pixels from expanded stroma
-    stroma = stroma7 * np.invert(epithelia)
+    stroma = stroma * np.invert(epithelia)
     print('stroma expanded')
     imshow(stroma, "stroma")
     if save_intermediate_images:
@@ -495,8 +485,7 @@ for f in files:
         print(filename + " saved")
     
     # Apply the stroma mask to image
-    stroma8 = stroma.astype(np.uint8) * 255
-    stroma_img = cv2.bitwise_and(img_rgb,img_rgb,mask = stroma8)
+    stroma_img = cv2.bitwise_and(img_rgb,img_rgb,mask = (stroma.astype(np.uint8) * 255))
     imshow(stroma_img, "stroma_img")
     if save_epithelia_and_stroma:
         filename = os.path.join(output_dir, image_name + " Stroma.png")
