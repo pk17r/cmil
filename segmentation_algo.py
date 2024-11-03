@@ -34,12 +34,13 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from skimage import data
-from skimage import color
+#from skimage import data
+#from skimage import color
 from skimage import morphology
-from skimage import segmentation
-from skimage import filters
-import scipy.ndimage as ndimage
+#from skimage import segmentation
+#from skimage import filters
+#import scipy.ndimage as ndimage
+import gc
 
 # Plot the image
 def imshow(img, title):
@@ -53,13 +54,13 @@ def imshow(img, title):
     plt.title(title)
     plt.show(block=True)
 
-def pixels_within_distance(mask, distance):
-    """Finds pixels within a specified distance from a 2D mask."""
-    # Create a distance map from the mask
-    distance_map = ndimage.distance_transform_edt(np.logical_not(mask))
-    # Find pixels within the specified distance
-    pixels_within = distance_map <= distance
-    return pixels_within
+#def pixels_within_distance(mask, distance):
+#    """Finds pixels within a specified distance from a 2D mask."""
+#    # Create a distance map from the mask
+#    distance_map = ndimage.distance_transform_edt(np.logical_not(mask))
+#    # Find pixels within the specified distance
+#    pixels_within = distance_map <= distance
+#    return pixels_within
 
 
 if not os.path.isdir(input_dir):
@@ -90,6 +91,7 @@ for f in files:
             exit()
         
         image_name = x[0]
+        del x
     
     input_filepath = os.path.join(input_dir, image_name)
     print(input_filepath + ".tif")
@@ -129,7 +131,7 @@ for f in files:
             plt.show()
         
         plt.close()
-        del fig
+        del fig, ax_arr, ax1, ax2, ax3, ax4
     
     img_ycrcb = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2YCrCb)
     #imshow(img_ycrcb, 'img_ycrcb')
@@ -169,7 +171,7 @@ for f in files:
             plt.show()
         
         plt.close()
-        del fig, img_Cg
+        del fig, ax_arr, ax1, ax2, ax3, ax4, img_Cg
     
     #img_lumma = img_ycrcb[:,:,0]
     imshow(img_ycrcb[:,:,0], "img_lumma")
@@ -195,7 +197,7 @@ for f in files:
     #print(filename + " saved")
     ##plt.show()
     #plt.close()
-    #del fig
+    #del fig, ax_arr, ax1, ax2, ax3
     
     # we will get background from lumma channel
     
@@ -233,7 +235,7 @@ for f in files:
             plt.show()
         
         plt.close()
-        del fig
+        del fig, ax_arr
     
     
     # find bin with most number of pixels
@@ -314,7 +316,7 @@ for f in files:
             plt.show()
         
         plt.close()
-        del fig
+        del fig, ax_arr
     
     
     # find bin with most number of pixels
@@ -607,10 +609,13 @@ for f in files:
         plt.show()
     
     plt.close()
-    del fig
+    del fig, ax_arr, ax1, ax2, ax3
+    del img_rgb, img_ycrcb, stroma_img, epithelia_img, background, epithelia, stroma, Cr_binned, lumma_binned, filename
+    # Force a garbage collection
+    gc.collect()
     
     if run_over_all_images == 0:
-        break;
+        break
 
 print("done!")
 exit()
