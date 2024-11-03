@@ -53,6 +53,7 @@ def imshow(img, title):
     plt.axis('off')
     plt.title(title)
     plt.show(block=True)
+    plt.close('all')
 
 #def pixels_within_distance(mask, distance):
 #    """Finds pixels within a specified distance from a 2D mask."""
@@ -106,7 +107,8 @@ for f in files:
     img_rgb = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2RGB)
     imshow(img_rgb, 'img_rgb')
     if save_bins_representation or show_images:
-        fig, ax_arr = plt.subplots(1, 4, sharex=True, sharey=True, figsize=(20, 12))
+        fig = plt.figure(num=1, clear=True, figsize=(20, 12))
+        ax_arr = fig.subplots(1, 4, sharex=True, sharey=True)
         fig.suptitle('RGB - R - G - B', fontsize = 25)
         ax1, ax2, ax3, ax4 = ax_arr.ravel()
         ax1.imshow(img_rgb)
@@ -130,13 +132,14 @@ for f in files:
         if show_images:
             plt.show()
         
-        plt.close()
+        plt.close('all')
         del fig, ax_arr, ax1, ax2, ax3, ax4
     
     img_ycrcb = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2YCrCb)
     #imshow(img_ycrcb, 'img_ycrcb')
     if save_bins_representation or show_images:
-        fig, ax_arr = plt.subplots(1, 5, sharex=True, sharey=True, figsize=(20, 12))
+        fig = plt.figure(num=1, clear=True, figsize=(20, 12))
+        ax_arr = fig.subplots(1, 5, sharex=True, sharey=True)
         fig.suptitle('RGB888 - Y - Cb - Cr - Cg', fontsize = 25)
         ax1, ax2, ax3, ax4, ax5 = ax_arr.ravel()
         ax1.imshow(img_rgb)
@@ -170,7 +173,7 @@ for f in files:
         if show_images:
             plt.show()
         
-        plt.close()
+        plt.close('all')
         del fig, ax_arr, ax1, ax2, ax3, ax4, img_Cg
     
     #img_lumma = img_ycrcb[:,:,0]
@@ -179,7 +182,8 @@ for f in files:
     #img_gray= cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
     #imshow(img_gray, "img_gray")
     
-    #fig, ax_arr = plt.subplots(1, 3, sharex=True, sharey=True, figsize=(20, 12))
+    #fig = plt.figure(num=1, clear=True, figsize=(20, 12))
+    #ax_arr = fig.subplots(1, 3, sharex=True, sharey=True)
     #fig.suptitle('Grayscale vs YCbCr Lumma - Stroma-Epithelia better differentiated', fontsize = 25)
     #ax1, ax2, ax3 = ax_arr.ravel()
     #ax1.imshow(img_rgb)
@@ -214,7 +218,8 @@ for f in files:
     
     ## figure to show different lumma bins
     if save_bins_representation:
-        fig, ax_arr = plt.subplots(2, int(lumma_bins_n/2) + 1, sharex=True, sharey=True, figsize=(20, 12))
+        fig = plt.figure(num=1, clear=True, figsize=(20, 12))
+        ax_arr = fig.subplots(2, int(lumma_bins_n/2) + 1, sharex=True, sharey=True)
         fig.suptitle(image_name + " Lumma " + str(lumma_bins_n) + " Bins Representation", fontsize = 25)
         row=0
         col=0
@@ -234,7 +239,7 @@ for f in files:
         if show_images:
             plt.show()
         
-        plt.close()
+        plt.close('all')
         del fig, ax_arr
     
     
@@ -295,7 +300,8 @@ for f in files:
     
     ## figure to show different Red Chroma bins
     if save_bins_representation:
-        fig, ax_arr = plt.subplots(2, 6, sharex=True, sharey=True, figsize=(20, 12))
+        fig = plt.figure(num=1, clear=True, figsize=(20, 12))
+        ax_arr = fig.subplots(2, 6, sharex=True, sharey=True)
         fig.suptitle(image_name + " Red Chroma " + str(Cr_bins_n) + " Bins Representation", fontsize = 25)
         row=0
         col=0
@@ -315,7 +321,7 @@ for f in files:
         if show_images:
             plt.show()
         
-        plt.close()
+        plt.close('all')
         del fig, ax_arr
     
     
@@ -372,7 +378,8 @@ for f in files:
     #
     ### figure to show different Blue Chroma bins
     #if save_bins_representation:
-    #    fig, ax_arr = plt.subplots(2, 6, sharex=True, sharey=True, figsize=(20, 12))
+    #    fig = plt.figure(num=1, clear=True, figsize=(20, 12))
+    #    ax_arr = fig = plt.subplots(2, 6, sharex=True, sharey=True)
     #    fig.suptitle(image_name + " Blue Chroma " + str(Cb_bins_n) + " Bins Representation", fontsize = 25)
     #    row=0
     #    col=0
@@ -392,7 +399,7 @@ for f in files:
     #    if show_images:
     #        plt.show()
     #    
-    #    plt.close()
+    #    plt.close('all')
     #    del fig
     
     
@@ -410,7 +417,8 @@ for f in files:
     #
     ### figure to show different Green Channel bins
     #if save_bins_representation:
-    #    fig, ax_arr = plt.subplots(2, int(green_bins_n/2) + 1, sharex=True, sharey=True, figsize=(20, 12))
+    #    fig = plt.figure(num=1, clear=True, figsize=(20, 12))
+    #    ax_arr = fig.subplots(2, int(green_bins_n/2) + 1, sharex=True, sharey=True)
     #    fig.suptitle(image_name + " Green Chroma " + str(green_bins_n) + " Bins Representation", fontsize = 25)
     #    row=0
     #    col=0
@@ -430,7 +438,7 @@ for f in files:
     #    if show_images:
     #        plt.show()
     #    
-    #    plt.close()
+    #    plt.close('all')
     #    del fig
     #
     #
@@ -589,7 +597,8 @@ for f in files:
     
     
     # Save a segmentation visualization image
-    fig, ax_arr = plt.subplots(1, 3, sharex=True, sharey=True, figsize=(20, 12))
+    fig = plt.figure(num=1, clear=True, figsize=(20, 12))
+    ax_arr = fig.subplots(1, 3, sharex=True, sharey=True)
     fig.suptitle('Input - Stroma - Epithelia Segmentation Visualization', fontsize = 25)
     ax1, ax2, ax3 = ax_arr.ravel()
     ax1.imshow(img_rgb)
@@ -608,7 +617,7 @@ for f in files:
     if show_images:
         plt.show()
     
-    plt.close()
+    plt.close('all')
     del fig, ax_arr, ax1, ax2, ax3
     del img_rgb, img_ycrcb, stroma_img, epithelia_img, background, epithelia, stroma, Cr_binned, lumma_binned, filename
     # Force a garbage collection
