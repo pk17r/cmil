@@ -132,8 +132,6 @@ for f in files:
         if show_images:
             plt.show()
         
-        plt.close('all')
-        del fig, ax_arr, ax1, ax2, ax3, ax4
     
     img_ycrcb = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2YCrCb)
     #imshow(img_ycrcb, 'img_ycrcb')
@@ -173,8 +171,6 @@ for f in files:
         if show_images:
             plt.show()
         
-        plt.close('all')
-        del fig, ax_arr, ax1, ax2, ax3, ax4, img_Cg
     
     #img_lumma = img_ycrcb[:,:,0]
     imshow(img_ycrcb[:,:,0], "img_lumma")
@@ -200,8 +196,6 @@ for f in files:
     #plt.savefig(filename)
     #print(filename + " saved")
     ##plt.show()
-    #plt.close()
-    #del fig, ax_arr, ax1, ax2, ax3
     
     # we will get background from lumma channel
     
@@ -239,9 +233,6 @@ for f in files:
         if show_images:
             plt.show()
         
-        plt.close('all')
-        del fig, ax_arr
-    
     
     # find bin with most number of pixels
     
@@ -321,9 +312,6 @@ for f in files:
         if show_images:
             plt.show()
         
-        plt.close('all')
-        del fig, ax_arr
-    
     
     # find bin with most number of pixels
     
@@ -399,8 +387,6 @@ for f in files:
     #    if show_images:
     #        plt.show()
     #    
-    #    plt.close('all')
-    #    del fig
     
     
     ## define binning in Green Channel
@@ -438,9 +424,6 @@ for f in files:
     #    if show_images:
     #        plt.show()
     #    
-    #    plt.close('all')
-    #    del fig
-    #
     #
     ## find bin with most number of pixels
     #
@@ -617,8 +600,6 @@ for f in files:
     if show_images:
         plt.show()
     
-    plt.close('all')
-    del fig, ax_arr, ax1, ax2, ax3
     del img_rgb, img_ycrcb, stroma_img, epithelia_img, background, epithelia, stroma, Cr_binned, lumma_binned, filename
     # Force a garbage collection
     gc.collect()
