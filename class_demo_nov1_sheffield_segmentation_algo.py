@@ -18,8 +18,10 @@ save_epithelia_and_stroma = 0                   # to save epithelia and stroma o
 
 # visualizations
 
-output_visualization_dir = "extracted/sheffield_h&e/visualization_v1"         # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
-#output_visualization_dir = "extracted/liverpool_h&e/visualization_v1"
+output_visualization_dir = "extracted/sheffield_h&e/visualization"         # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
+# MyNote: output in dir: class_demo_nov1_sheffield_visualization
+
+#output_visualization_dir = "extracted/liverpool_h&e/visualization"
 #output_visualization_dir = "workingdir/segmented"
 save_bins_representation = 0                    # to save Lumma and Red Chroma Bins for visualization
 

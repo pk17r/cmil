@@ -41,3 +41,11 @@ save_bins_representation = 0                # to save Lumma and Red Chroma Bins 
 ## Notes
 - view tiff image using: tifffile <filename>
 - view tiff image series 0 using: tifffile <filename> -s 0
+
+
+## Class Demo
+- Nov 1: class_demo_nov1_sheffield_segmentation_algo.py
+
+
+## Work Status Notes
+- class_demo_nov1_sheffield_segmentation_algo.py.py works well with sheffield but not liverpool
