@@ -17,7 +17,7 @@ overwrite_output = 1                            # to overwrite previous output
 #image_name = "test"             # specific image to run with 'run_over_all_images = 0'
 #image_name = "h2114158 h&e_ROI_2"
 #image_name = "h2114186 h&e_ROI_3"
-image_name = "h2114182 h&e_ROI_1"
+image_name = "h2114182 h&e_ROI_3"
 save_epithelia_and_stroma = 0                   # to save epithelia and stroma output
 
 # visualizations
@@ -336,10 +336,10 @@ for f in files:
     
     # Locate Definite Stroma
     
-    # Stroma is three bins from  (middle bin) to (middle - 2 bin) in img_u_expanded_binned_50
+    # Definite Stroma is middle bin in img_u_expanded_binned_50
+    # and highly red region >= 18 bin in img_v_expanded_binned_20
     stroma_bin = no_of_chroma_bins/2
-    stroma = img_u_expanded_binned_50 <= stroma_bin
-    stroma2 = stroma * np.invert(img_u_expanded_binned_50 <= (stroma_bin - 3))
+    stroma = img_u_expanded_binned_50 == stroma_bin
     # and highly red region >= 18 bin in img_v_expanded_binned_20
     stroma = stroma + (img_v_expanded_binned_20 >= 18)
     imshow(stroma, "stroma1")
@@ -410,7 +410,6 @@ for f in files:
         small_obj_size_to_remove = 1000
     elif percent_epithelia_pixels < 0.03:
         small_obj_size_to_remove = 2000
-    
     print("small_obj_size_to_remove = " + str(small_obj_size_to_remove))
     # remove small objects
     epithelia = morphology.remove_small_objects(epithelia, small_obj_size_to_remove)
