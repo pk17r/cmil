@@ -5,15 +5,15 @@
 
 show_images = 0                                 # to display images in real-time
 save_intermediate_images = 0                    # save R-G-B and Y-Cb-Cr Channels
-#input_dir = "data/sheffield_h&e"               # all files in here will be read, expected filenames: <filename>.tif
+input_dir = "data/sheffield_h&e"               # all files in here will be read, expected filenames: <filename>.tif
 #input_dir = "data/liverpool_h&e"
-input_dir = "data_test"
-#output_dir = "extracted/sheffield_h&e"         # epithelia and stroma will be saved here
+#input_dir = "data_test"
+output_dir = "extracted/sheffield_h&e"         # epithelia and stroma will be saved here
 #output_dir = "extracted/liverpool_h&e"
 #output_dir = "workingdir/segmented"
-output_dir = "output_test"
-run_over_all_images = 0                         # to run over all images in 'input_dir'
-overwrite_output = 1                            # to overwrite previous output
+#output_dir = "output_test"
+run_over_all_images = 1                         # to run over all images in 'input_dir'
+overwrite_output = 0                            # to overwrite previous output
 #image_name = "test"             # specific image to run with 'run_over_all_images = 0'
 #image_name = "h2114158 h&e_ROI_2"
 #image_name = "h2114186 h&e_ROI_3"
@@ -23,11 +23,17 @@ save_epithelia_and_stroma = 0                   # to save epithelia and stroma o
 
 # visualizations
 
-#output_visualization_dir = "extracted/sheffield_h&e/visualization_v1"         # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
-#output_visualization_dir = "extracted/liverpool_h&e/visualization_v1"
-output_visualization_dir = output_dir
+output_visualization_dir = "extracted/sheffield_h&e/visualization"         # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
+#output_visualization_dir = "extracted/liverpool_h&e/visualization"
+#output_visualization_dir = output_dir
 #rescale_size = 0.5
 save_bins_representation = 0                    # to save Lumma and Red Chroma Bins for visualization
+
+# computing resources
+max_no_of_threads_to_use = 6
+# Recommended RAM > 27Gb
+# If app gets killed by low memory, reduce max_no_of_threads_to_use, or increase it if you have more RAM and CPU Cores
+# If app gets killed, make 'overwrite_output = 0' to start from where it left last time
 
 ##########################################
 
@@ -133,108 +139,27 @@ def create_binned_representation(img_2d, label, no_of_bins = 20, bins_on_plot = 
     return img_binned, most_pixels_bin
 
 
-if not os.path.isdir(input_dir):
-    print("input_dir: '" + input_dir + "' directory does not exist! Exiting...")
-    exit()
-
-if not os.path.isdir(output_dir):
-    os.mkdir(output_dir)
-    print("output_dir: '" + output_dir + "' directory created.")
-
-if not os.path.isdir(output_visualization_dir):
-    os.mkdir(output_visualization_dir)
-    print("output_visualization_dir: '" + output_visualization_dir + "' directory created.")
+# the segmentation algo that runs over an image
+# input:
+#   file_index = index of file in files to work with
+def segmentation_algo(file_index, image_name = ""):
+    global show_images, save_intermediate_images, input_dir, output_dir, save_epithelia_and_stroma, output_visualization_dir, save_bins_representation, files, overwrite_output, run_over_all_images, total_num_of_images
     
-
-# Files and Folders in Input Dir
-files = os.listdir(input_dir)
-# Filtering only the files.
-files = [f for f in files if os.path.isfile(input_dir+'/'+f)]
-total_num_of_images = len(files)
-print(f"Image Dataset size: {total_num_of_images}")
-
-# Get available cpu cores
-cores = os.cpu_count()
-print("Number of CPU cores:", cores)
-
-no_of_threads_to_use = cores / 2
-print("Number of Threads to use:", no_of_threads_to_use)
-
-## current image number to work with
-#current_image_num = 0
-#
-## reached_end_of_images flag
-#reached_end_of_images = 0
-#
-## function that stores next image to work with in image_name global variable
-#def move_to_next_image():
-#    global current_image_num, total_num_of_images, files, run_over_all_images, overwrite_output, output_visualization_dir, image_name, reached_end_of_images
-#    while 1:
-#        if current_image_num < total_num_of_images:
-#            f = files[current_image_num]
-#            if run_over_all_images:
-#                print("\n*********** CURRENT FILE: " + f)
-#                x = f.split(".", 1)
-#                if x[1] != "tif":
-#                    print(x)
-#                    print("Unexpected Filename - more dots than anticipated. Exiting...")
-#                    exit()
-#
-#                image_name = x[0]
-#                del x
-#
-#            if overwrite_output == 0 and run_over_all_images:
-#                if os.path.exists(os.path.join(output_visualization_dir, image_name + ".png")):
-#                    current_image_num = current_image_num + 1
-#                    continue
-#                
-#            # next image found
-#            # image_name
-#            
-#            current_image_num = current_image_num + 1
-#            if current_image_num == total_num_of_images:
-#                # reached last image
-#                reached_end_of_images = 1
-#            
-#            break
-#        else:
-#            # reached last image
-#            reached_end_of_images = 1
-#            break
-#    
-#
-#while 1:
-#    move_to_next_image()
-#    print(image_name)
-#    if reached_end_of_images:
-#        break
-
-# Get the virtual memory statistics
-mem = psutil.virtual_memory()
-# Get the available memory
-available_memory_bytes = mem.available
-available_memory_gb = available_memory_bytes / (1024 * 1024 * 1024)
-print(f"Available memory: {available_memory_gb:.2f} GB")
-
-#with concurrent.futures.ThreadPoolExecutor(max_workers=no_of_threads_to_use) as executor:
-#    executor.map(segmentation_algo, range(total_num_of_images))
-#segmentation_algo(0);
-
-for f in files:
-    if run_over_all_images:
-        print("\n*********** CURRENT FILE: " + f)
+    if file_index != -1:
+        f = files[file_index]
+        #if run_over_all_images:
+        print("\n*********** CURRENT FILE (" + str(file_index+1) + "/" + str(total_num_of_images) + "): " + f)
         x = f.split(".", 1)
         if x[1] != "tif":
             print(x)
-            print("Unexpected Filename - more dots than anticipated. Exiting...")
+            print("Unexpected Filename:" + f + " - more dots than anticipated. Exiting...")
             exit()
-        
         image_name = x[0]
         del x
     
     if overwrite_output == 0 and run_over_all_images:
         if os.path.exists(os.path.join(output_visualization_dir, image_name + ".png")):
-            continue
+            return
     
     input_filepath = os.path.join(input_dir, image_name)
     print(input_filepath + ".tif")
@@ -291,12 +216,13 @@ for f in files:
         create_binned_representation(img_u_expanded, "img_u_expanded")
         create_binned_representation(img_v_expanded, "img_v_expanded")
     
-
     # Locate Background
     
     # we will get background from lumma channel
     
     lumma_binned, lumma_most_pixels_bin = create_binned_representation(img_Y, "Lumma")
+    
+    del img_yuv_f, img_u, img_v, img_Y, img_Cr
     
     background_bin = lumma_most_pixels_bin
     background = lumma_binned == background_bin
@@ -332,6 +258,9 @@ for f in files:
     # Bin Red Chroma channel
     #Cr_binned, Cr_most_pixels_bin = save_binned_representation(img_Cr, "Red Chroma", no_of_chroma_bins, 10, 24)
     img_v_expanded_binned_50, img_v_expanded_50_most_pixels_bin = create_binned_representation(img_v_expanded, "img_v_expanded", no_of_chroma_bins, 20, 24)
+    
+    del img_u_expanded, img_v_expanded
+    
     # Locate Definite Stroma
     
     # Definite Stroma is middle bin in img_u_expanded_binned_50
@@ -350,13 +279,6 @@ for f in files:
     stroma = morphology.remove_small_objects(stroma, 1000)
     imshow(stroma, "definite stroma")
     print('definite stroma located')
-    
-    
-    # Mark regions with blue ink drop for removal from epithelia
-    
-    #imshow(img_Cb, "img_Cb")
-    blue_ink = img_Cb > 152
-    imshow(blue_ink, "blue_ink")
     
     
     # Locate Epithelia
@@ -386,7 +308,9 @@ for f in files:
     epithelia = epithelia * np.invert(stroma)
     imshow(epithelia, "epithelia3")
     # remove blue ink drop region
-    epithelia = epithelia * np.invert(blue_ink)
+    # Mark regions with blue ink drop for removal from epithelia
+    imshow(img_Cb > 152, "blue_ink")
+    epithelia = epithelia * np.invert(img_Cb > 152)
     imshow(epithelia, "epithelia4")
     # dilation
     #epithelia = morphology.dilation(epithelia, morphology.square(3))
@@ -476,12 +400,60 @@ for f in files:
     cv2.imwrite(filename, cv2.cvtColor(combined_image, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_PNG_COMPRESSION , 0])
     print(filename + " saved")
     
-    del img_rgb, img_Y, img_Cb, img_Cr, blue_ink, stroma_img, epithelia_img, background, epithelia, stroma, lumma_binned, filename
+    del img_rgb, img_Cb, combined_image, white_border_f, stroma_img, epithelia_img, background, epithelia, stroma, stroma2, lumma_binned, filename, img_u_expanded_binned_50, img_v_expanded_binned_50
     # Force a garbage collection
     gc.collect()
+
+
+
+
+
+if not os.path.isdir(input_dir):
+    print("input_dir: '" + input_dir + "' directory does not exist! Exiting...")
+    exit()
+
+if not os.path.isdir(output_dir):
+    os.mkdir(output_dir)
+    print("output_dir: '" + output_dir + "' directory created.")
+
+if not os.path.isdir(output_visualization_dir):
+    os.mkdir(output_visualization_dir)
+    print("output_visualization_dir: '" + output_visualization_dir + "' directory created.")
     
-    if run_over_all_images == 0:
-        break
+
+# Files and Folders in Input Dir
+files = os.listdir(input_dir)
+# Filtering only the files.
+files = [f for f in files if os.path.isfile(input_dir+'/'+f)]
+total_num_of_images = len(files)
+print(f"Image Dataset size: {total_num_of_images}")
+
+# Get available cpu cores
+cores = os.cpu_count()
+print("Number of CPU cores:", cores)
+
+no_of_threads_to_use = min(cores - 2, max_no_of_threads_to_use)
+print("Number of Threads to use:", no_of_threads_to_use)
+
+# Get the virtual memory statistics
+mem = psutil.virtual_memory()
+# Get the available memory
+available_memory_bytes = mem.available
+available_memory_gb = available_memory_bytes / (1024 * 1024 * 1024)
+print(f"Available memory: {available_memory_gb:.2f} GB")
+
+if run_over_all_images == 1 and save_bins_representation == 0 and show_images == 0:
+    # use multi threading
+    with concurrent.futures.ThreadPoolExecutor(max_workers=no_of_threads_to_use) as executor:
+        executor.map(segmentation_algo, range(total_num_of_images))
+else:
+    # run one by one
+    if run_over_all_images == 1:
+        for f in range(0, total_num_of_images):
+            segmentation_algo(f)
+    else:
+        segmentation_algo(-1, image_name)
+
 
 print("done!")
 exit()
