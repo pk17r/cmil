@@ -16,7 +16,8 @@ run_over_all_images = 1                         # to run over all images in 'inp
 overwrite_output = 1                            # to overwrite previous output
 #image_name = "test"             # specific image to run with 'run_over_all_images = 0'
 #image_name = "h2114158 h&e_ROI_2"
-image_name = "h2114186 h&e_ROI_3"
+#image_name = "h2114186 h&e_ROI_3"
+image_name = "h2114182 h&e_ROI_1"
 save_epithelia_and_stroma = 0                   # to save epithelia and stroma output
 
 # visualizations
@@ -280,14 +281,16 @@ for f in files:
     imshow(img_u, "img_u_f")
     img_v = np.clip(((img_yuv_f[:,:,2] + 1) / 2 * 255), 0, 255)
     imshow(img_v, "img_v_f")
-    #save_binned_representation(img_u, "img_u")
-    #save_binned_representation(img_v, "img_v")
     img_u_expanded = (np.clip(((img_yuv_f[:,:,1] * 4 + 1) / 2 * 255), 0, 255)).astype(np.uint8)
     imshow(img_u_expanded, "img_u_expanded")
     img_v_expanded = (np.clip(((img_yuv_f[:,:,2] * 4 + 1) / 2 * 255), 0, 255)).astype(np.uint8)
     imshow(img_v_expanded, "img_v_expanded")
-    #save_binned_representation(img_u_expanded, "img_u_expanded")
-    img_v_expanded_binned, img_v_expanded_most_pixels_bin = save_binned_representation(img_v_expanded, "img_v_expanded")
+    
+    img_v_expanded_binned_20, img_v_expanded_most_pixels_bin = save_binned_representation(img_v_expanded, "img_v_expanded")
+    if save_bins_representation or show_images:
+        save_binned_representation(img_u, "img_u")
+        save_binned_representation(img_v, "img_v")
+        save_binned_representation(img_u_expanded, "img_u_expanded")
     
 
     # Locate Background
@@ -325,7 +328,7 @@ for f in files:
     
     no_of_chroma_bins = 50
     #Cb_binned, Cb_most_pixels_bin = save_binned_representation(img_Cb, "Blue Chroma", no_of_chroma_bins, 10, 20)
-    img_u_expanded_binned, img_u_expanded_most_pixels_bin = save_binned_representation(img_u_expanded, "img_u_expanded", no_of_chroma_bins, 14, 18)
+    img_u_expanded_binned_50, img_u_expanded_most_pixels_bin = save_binned_representation(img_u_expanded, "img_u_expanded", no_of_chroma_bins, 14, 18)
     
     # Bin Red Chroma channel
     #Cr_binned, Cr_most_pixels_bin = save_binned_representation(img_Cr, "Red Chroma", no_of_chroma_bins, 10, 24)
@@ -333,13 +336,12 @@ for f in files:
     
     # Locate Definite Stroma
     
-    # Stroma is three bins from  middle bin - 2 bin in img_u_expanded_binned and
+    # Stroma is three bins from  (middle bin) to (middle - 2 bin) in img_u_expanded_binned_50
     stroma_bin = no_of_chroma_bins/2
-    stroma = img_u_expanded_binned <= stroma_bin
-    #stroma = stroma + (img_u_expanded_binned == stroma_bin - 1)
-    #stroma = stroma + (img_u_expanded_binned == stroma_bin - 2)
-    # and highly red region >= 16 bin in img_v_expanded_binned
-    stroma = stroma + (img_v_expanded_binned >= 16)
+    stroma = img_u_expanded_binned_50 <= stroma_bin
+    stroma2 = stroma * np.invert(img_u_expanded_binned_50 <= (stroma_bin - 3))
+    # and highly red region >= 18 bin in img_v_expanded_binned_20
+    stroma = stroma + (img_v_expanded_binned_20 >= 18)
     imshow(stroma, "stroma1")
     # remove background pixels from stroma
     stroma2 = stroma * np.invert(background)
@@ -365,39 +367,40 @@ for f in files:
     # 1-line easy approximation: :)
     # imshow((img_Cr >= 137) * (img_Cb <= 145), "epithelia")
     
-    # Epithelia is the first five bins that are 1 bin ahead of middle in img_v_expanded_binned
+    # Epithelia is the first three bins that are 1 bin ahead of middle in img_v_expanded_binned
+    # add bins 27-32 in img_u_expanded_binned_50
+    # and three Bins from Lumma - background bin / 3 and two below
     epithelia_bin = 10 + 1
-    epithelia = img_v_expanded_binned == epithelia_bin
-    epithelia = epithelia + (img_v_expanded_binned == epithelia_bin + 1)
-    epithelia = epithelia + (img_v_expanded_binned == epithelia_bin + 2)
-    epithelia = epithelia + (img_v_expanded_binned == epithelia_bin + 3)
+    epithelia = img_v_expanded_binned_20 >= epithelia_bin
+    epithelia = epithelia * np.invert((img_v_expanded_binned_20 >= (epithelia_bin + 3)))
+    # add bins 27-32 in img_u_expanded_binned_50
+    epithelia = epithelia + (img_u_expanded_binned_50 >= 27)
+    epithelia = epithelia * np.invert((img_u_expanded_binned_50 >= 33))
     imshow(epithelia, "epithelia1")
     # remove background pixels from epithelia
     epithelia = epithelia * np.invert(background)
     imshow(epithelia, "epithelia2")
+    ## and add three Bins from Lumma - background bin / 3 and two below
+    epithelia = epithelia + (lumma_binned == int(background_bin / 3))
+    epithelia = epithelia + (lumma_binned == int(background_bin / 3 - 1))
+    epithelia = epithelia + (lumma_binned == int(background_bin / 3 - 2))
+    imshow(epithelia, "epithelia3lu")
     # remove stroma pixels from epithelia
     epithelia = epithelia * np.invert(stroma)
     imshow(epithelia, "epithelia3")
-    ## add Bins from Lumma - background bin * 0.6 and two below
-    #epithelia = epithelia + (lumma_binned == int(background_bin * 0.6))
-    #epithelia = epithelia + (lumma_binned == int(background_bin * 0.6 - 1))
-    #epithelia = epithelia + (lumma_binned == int(background_bin * 0.6 - 2))
-    #imshow(epithelia, "epithelia3lu")
     # remove blue ink drop region
-    #blue_ink = img_Cr < 120
-    #imshow(blue_ink, "blue_ink")
     epithelia = epithelia * np.invert(blue_ink)
     imshow(epithelia, "epithelia4")
     # dilation
     #epithelia = morphology.dilation(epithelia, morphology.square(3))
     epithelia = morphology.dilation(epithelia, morphology.square(2))
     imshow(epithelia, "epithelia5")
-    # remove very small objects
-    epithelia = morphology.remove_small_objects(epithelia, 500)
-    imshow(epithelia, "epithelia6")
     # remove small holes
     epithelia = morphology.remove_small_holes(epithelia, 10000)
     imshow(epithelia, "epithelia7")
+    # remove very small objects
+    epithelia = morphology.remove_small_objects(epithelia, 500)
+    imshow(epithelia, "epithelia6")
     # find out epithelia information at current state
     n_epithelia_pixels = np.count_nonzero(epithelia)
     percent_epithelia_pixels = n_epithelia_pixels / (epithelia.shape[0] * epithelia.shape[1])
