@@ -26,11 +26,11 @@ kSaveEpitheliaAndStroma = 0                   # to save epithelia and stroma out
 #kOutputVisualizationDir = "extracted/sheffield_h&e/visualization"         # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
 kOutputVisualizationDir = "extracted/liverpool_h&e/visualization2"
 #kOutputVisualizationDir = kOutputDir
-#kRescaleSize = 0.5
+kRescaleSize = 0.5                          # Downscaling image to make our development life easy
 kSaveBinsRepresentation = 0                    # to save Lumma and Red Chroma Bins for visualization
 
 # computing resources
-kPercentMinMemoryAvailableToStartNewThread = 70     # if execution gets killed because of low memory, increase this constant. If you have > 32G then you can decrease this
+kPercentMinMemoryAvailableToStartNewThread = 50     # if execution gets killed because of low memory, increase this constant. If you have > 32G then you can decrease this
 
 ##########################################
 
@@ -50,12 +50,22 @@ from skimage import color
 from skimage import morphology
 #from skimage import segmentation
 #from skimage import filters
-#from skimage.transform import rescale
+from skimage.transform import rescale
 #import scipy.ndimage as ndimage
 import gc
 import psutil
 import time
+import math
 from bounded_pool_executor import BoundedProcessPoolExecutor   # https://github.com/mowshon/bounded_pool_executor/tree/master
+
+program_start_time = time.time()
+
+def ProgramRunTime():
+    seconds = int(time.time() - program_start_time)
+    minutes = math.floor(seconds / 60)
+    seconds = seconds % 60
+    runtime = f"({minutes:02}:{seconds:02})"
+    return runtime
 
 def GetPercentAvailableMemory():
     # Get the virtual memory statistics
@@ -65,7 +75,7 @@ def GetPercentAvailableMemory():
     #available_memory_gb = mem.available / (1024 * 1024 * 1024)
     #print(f"Memory: {available_memory_gb:.1f}GB/{total_memory_gb:.1f}GB")
     percent_mem_available = int(mem.available / mem.total * 100)
-    print(f"Memory Available = {percent_mem_available}%")
+    print(f"{ProgramRunTime()} Memory Available = {percent_mem_available}%")
     return percent_mem_available
 
 # Plot the image
@@ -177,6 +187,10 @@ def segmentation_algo(file_index, image_name = ""):
     # Load Image
     img_rgb = cv2.imread(input_filepath + ".tif")
     img_rgb = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2RGB)
+
+    # Downsizing / Rescaling image for easier development purpose
+    # Can be commented out in release
+    img_rgb = rescale(img_rgb, kRescaleSize, anti_aliasing=True, channel_axis=2)
     imshow(img_rgb, 'img_rgb')
     
     # time mapping
@@ -463,6 +477,6 @@ else:
         segmentation_algo(-1, image_name)
 
 
-print("done!")
+print(ProgramRunTime() + "done!")
 exit()
 
