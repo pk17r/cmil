@@ -16,7 +16,7 @@ kSaveEpitheliaAndStroma = 0                   # to save epithelia and stroma in 
 kRunOverAllImages = 0                         # to run over all images in 'kInputDir'
 kOverwriteOutput = 0                            # to overwrite previous output
 #image_name = "test"             # specific image to run with 'kRunOverAllImages = 0'
-image_name = "h2114186 h&e_ROI_3"
+image_name = "h2114159 h&e_ROI_2"
 #image_name = "h2114186 h&e_ROI_3"
 #image_name = "h1810898B  h&e_ROI_4"
 #image_name = "h2114155 h&e_ROI_4"
@@ -325,9 +325,11 @@ def segmentation_algo(file_index, image_name = ""):
     # Epithelia is the first 12 bins that are 1 bin ahead of middle in img_v_expanded_binned_50
     # add bins 27-32 in img_u_expanded_binned_50
     # and three Bins from Lumma - background bin / 3 and two below
+    # remove dialated not-red bins 38-40 in img_v_expanded_binned_50
     epithelia_bin = no_of_chroma_bins / 2 + 1
     epithelia = img_v_expanded_binned_50 >= epithelia_bin
     epithelia = epithelia * np.invert((img_v_expanded_binned_50 >= (epithelia_bin + 12)))
+    imshow(epithelia, "epithelia1")
     # add bins 27-32 in img_u_expanded_binned_50
     epithelia = epithelia + (img_u_expanded_binned_50 >= 27)
     epithelia = epithelia * np.invert((img_u_expanded_binned_50 >= 33))
@@ -340,6 +342,12 @@ def segmentation_algo(file_index, image_name = ""):
     epithelia = epithelia + (lumma_binned == int(background_bin / 3 - 1))
     epithelia = epithelia + (lumma_binned == int(background_bin / 3 - 2))
     imshow(epithelia, "epithelia3lu")
+    # remove dialated not-red bins 38-40 in img_v_expanded_binned_50
+    not_red = img_v_expanded_binned_50 == 38
+    not_red = not_red + (img_v_expanded_binned_50 == 39)
+    not_red = not_red + (img_v_expanded_binned_50 == 40)
+    not_red = morphology.dilation(not_red, morphology.square(5))
+    epithelia = epithelia * np.invert(not_red)
     # remove stroma pixels from epithelia
     epithelia = epithelia * np.invert(stroma)
     imshow(epithelia, "epithelia3")
