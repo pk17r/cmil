@@ -388,7 +388,7 @@ def segmentation_algo(file_index, image_name = ""):
     # get average red chroma value in areas
     for prop in region_props:
         print(f"label={prop.label} mean={prop.intensity_mean} stdev={prop.image_stdev} var={prop.image_var}")
-        if prop.intensity_mean < 133:
+        if prop.intensity_mean < 133 or prop.intensity_mean > 146:
             # invert areas having mean intensity lower than light red
             print(f"remove area label={prop.label} with img_v_dialated mean={prop.intensity_mean}")
             epithelia = epithelia * np.invert(labels == prop.label)
