@@ -13,10 +13,10 @@ kInputDir = "data_test"
 #kOutputDir = "workingdir/segmented"
 kOutputDir = "output_test"
 kSaveEpitheliaAndStroma = 0                   # to save epithelia and stroma in output dir (not needed during development)
-kRunOverAllImages = 1                         # to run over all images in 'kInputDir'
+kRunOverAllImages = 0                         # to run over all images in 'kInputDir'
 kOverwriteOutput = 0                            # to overwrite previous output
 #image_name = "test"             # specific image to run with 'kRunOverAllImages = 0'
-image_name = "h2114175 h&e_ROI_11"
+image_name = "h2114186 h&e_ROI_3"
 #image_name = "h2114186 h&e_ROI_3"
 #image_name = "h1810898B  h&e_ROI_4"
 #image_name = "h2114155 h&e_ROI_4"
@@ -45,9 +45,9 @@ import numpy as np
 #matplotlib.use('Agg') # Set the backend before importing pyplot
 import matplotlib.pyplot as plt
 import os
-#from skimage import data
 from skimage import color
 from skimage import morphology
+from skimage import measure
 #from skimage import segmentation
 #from skimage import filters
 from skimage.transform import rescale
@@ -59,6 +59,9 @@ import math
 from bounded_pool_executor import BoundedProcessPoolExecutor   # https://github.com/mowshon/bounded_pool_executor/tree/master
 
 program_start_time = time.time()
+
+# figure id - reusing matplotlib figures to save memory
+kFigureId = 1
 
 def ProgramRunTime():
     seconds = int(time.time() - program_start_time)
@@ -73,7 +76,6 @@ def CurrentIndex():
     return f"({current_file_index}/{total_num_of_images})"
 
 def GetPercentAvailableMemory():
-    
     # Get the virtual memory statistics
     mem = psutil.virtual_memory()
     # Get the available memory
@@ -86,15 +88,13 @@ def GetPercentAvailableMemory():
 
 # Plot the image
 def imshow(img, title):
-    global kShowImages
-    if kShowImages == 0:
-        return
-    plt.imshow(img)
-    plt.tight_layout()
-    plt.axis('off')
-    plt.title(title)
-    plt.show(block=True)
-    plt.close('all')
+    if kShowImages:
+        plt.imshow(img)
+        plt.tight_layout()
+        plt.axis('off')
+        plt.title(title)
+        plt.show(block=True)
+        plt.close('all')
 
 #def pixels_within_distance(mask, distance):
 #    """Finds pixels within a specified distance from a 2D mask."""
@@ -104,10 +104,20 @@ def imshow(img, title):
 #    pixels_within = distance_map <= distance
 #    return pixels_within
 
+# arguments must be in the specified order, matching regionprops
+def image_stdev(region, intensities):
+    # note the ddof arg to get the sample var if you so desire!
+    return np.std(intensities[region], ddof=1)
+
+# arguments must be in the specified order, matching regionprops
+def image_var(region, intensities):
+    # note the ddof arg to get the sample var if you so desire!
+    return np.var(intensities[region], ddof=1)
+
 def show_images_side_by_side(images, image_labels, combined_label):
-    global kSaveBinsRepresentation, figure_id, image_name, kOutputVisualizationDir, kShowImages
+    global kSaveBinsRepresentation, image_name, kOutputVisualizationDir, kShowImages
     no_of_images = len(images)
-    fig = plt.figure(num=figure_id, clear=True, figsize=(20, 12))
+    fig = plt.figure(num=kFigureId, clear=True, figsize=(20, 12))
     ax_arr = fig.subplots(1, no_of_images, sharex=True, sharey=True)
     fig.suptitle(image_name + " " + combined_label, fontsize = 25)
     col=0
@@ -125,12 +135,11 @@ def show_images_side_by_side(images, image_labels, combined_label):
         plt.show()
 
 def create_binned_representation(img_2d, label, no_of_bins = 20, bins_on_plot = 20, first_bin_on_plot = 0):
-    global kSaveBinsRepresentation, figure_id, image_name, kOutputVisualizationDir, kShowImages
     # decimate lumma image into lumma_bins_n
     img_binned = np.clip((np.floor(img_2d.astype(np.float64) * no_of_bins / 255)).astype(np.uint8), 0, no_of_bins-1)
     ## figure to show different img_2d bins
     if kSaveBinsRepresentation:
-        fig = plt.figure(num=figure_id, clear=True, figsize=(20, 12))
+        fig = plt.figure(num=kFigureId, clear=True, figsize=(20, 12))
         ax_arr = fig.subplots(2, int(bins_on_plot/2), sharex=True, sharey=True)
         fig.suptitle(image_name + " " + label + " " + str(no_of_bins) + " Bins Representation", fontsize = 25)
         row=0
@@ -166,7 +175,7 @@ def create_binned_representation(img_2d, label, no_of_bins = 20, bins_on_plot = 
 # input:
 #   file_index = index of file in files to work with
 def segmentation_algo(file_index, image_name = ""):
-    global kShowImages, kSaveIntermediateImages, kInputDir, kOutputDir, kSaveEpitheliaAndStroma, kOutputVisualizationDir, kSaveBinsRepresentation, files, kOverwriteOutput, kRunOverAllImages, total_num_of_images, figure_id
+    global files, total_num_of_images
     # Note: don't add 'image_name' to above list of global variables.
     
     if file_index != -1:
@@ -249,7 +258,7 @@ def segmentation_algo(file_index, image_name = ""):
     
     lumma_binned, lumma_most_pixels_bin = create_binned_representation(img_Y, "Lumma")
     
-    del img_yuv_f, img_u, img_v, img_Y, img_Cr
+    del img_yuv_f, img_u, img_Y, img_Cr
     
     background_bin = lumma_most_pixels_bin
     background = lumma_binned == background_bin
@@ -367,12 +376,25 @@ def segmentation_algo(file_index, image_name = ""):
     imshow(epithelia, "epithelia9")
     # remove small holes
     epithelia = morphology.remove_small_holes(epithelia, 20000)
-    print('epithelia located')
     imshow(epithelia, "epithelia")
+    # label connected areas in epithelia
+    labels = measure.label(epithelia)
+    img_v_dialated = morphology.dilation(img_v, morphology.square(5))
+    region_props = measure.regionprops(labels, img_v_dialated, extra_properties=[image_stdev, image_var])
+    # get average red chroma value in areas
+    for prop in region_props:
+        print(f"label={prop.label} mean={prop.intensity_mean} stdev={prop.image_stdev} var={prop.image_var}")
+        if prop.intensity_mean < 133:
+            # invert areas having mean intensity lower than light red
+            print(f"remove area label={prop.label} with img_v_dialated mean={prop.intensity_mean}")
+            epithelia = epithelia * np.invert(labels == prop.label)
+    print('epithelia located')
     if kSaveIntermediateImages:
         filename = os.path.join(kOutputDir, image_name + " Epithelia Mask.png")
         cv2.imwrite(filename, epithelia.astype(np.uint8)*255, [cv2.IMWRITE_PNG_COMPRESSION , 0])
         print(filename + " saved")
+    
+    del labels, region_props, img_v
     
     
     # Apply the epithelia mask to image
@@ -447,10 +469,6 @@ if not os.path.isdir(kOutputVisualizationDir):
     os.mkdir(kOutputVisualizationDir)
     print("kOutputVisualizationDir: '" + kOutputVisualizationDir + "' directory created.")
     
-
-# figure id - reusing figures to save memory
-figure_id = 1
-
 # Files and Folders in Input Dir
 files = os.listdir(kInputDir)
 # Filtering only the files.
