@@ -15,9 +15,9 @@ kOutputDir = "extracted/sheffield_h&e"         # epithelia and stroma will be sa
 kRunOverAllImages = 1                         # to run over all images in 'kInputDir'
 kOverwriteOutput = 0                            # to overwrite previous output
 #image_name = "test"             # specific image to run with 'kRunOverAllImages = 0'
-#image_name = "h2114158 h&e_ROI_2"
+image_name = "h2114158 h&e_ROI_2"
 #image_name = "h2114186 h&e_ROI_3"
-image_name = "h1810898B  h&e_ROI_4"
+#image_name = "h1810898B  h&e_ROI_4"
 #image_name = "h2114155 h&e_ROI_4"
 kSaveEpitheliaAndStroma = 0                   # to save epithelia and stroma output
 
@@ -406,17 +406,17 @@ def segmentation_algo(file_index, image_name = ""):
     
     # Save a segmentation visualization image
     # Combine the images horizontally
-    stroma_img_rescaled_f = rescale(stroma_img, kRescaleSize, anti_aliasing=True, channel_axis=2)
-    epithelia_img_rescaled_f = rescale(epithelia_img, kRescaleSize, anti_aliasing=True, channel_axis=2)
-    img_rgb_rescaled_f = rescale(img_rgb, kRescaleSize, anti_aliasing=True, channel_axis=2)
-    white_border_f = np.ones((img_rgb_rescaled_f.shape[0], 100, 3), dtype=np.uint8) * 255    # White Border - 3 layer
-    combined_image = np.hstack((img_rgb_rescaled_f, white_border_f, stroma_img_rescaled_f, white_border_f, epithelia_img_rescaled_f), dtype=np.uint8)
+    stroma_img_rescaled = (rescale(stroma_img, kRescaleSize, anti_aliasing=True, channel_axis=2) * 255).astype(np.uint8)
+    epithelia_img_rescaled = (rescale(epithelia_img, kRescaleSize, anti_aliasing=True, channel_axis=2) * 255).astype(np.uint8)
+    img_rgb_rescaled = (rescale(img_rgb, kRescaleSize, anti_aliasing=True, channel_axis=2) * 255).astype(np.uint8)
+    white_border = np.ones((img_rgb_rescaled.shape[0], 100, 3), dtype=np.uint8) * 255    # White Border - 3 layer
+    combined_image = np.hstack((img_rgb_rescaled, white_border, stroma_img_rescaled, white_border, epithelia_img_rescaled), dtype=np.uint8)
     imshow(combined_image, 'combined_image')
     filename = os.path.join(kOutputVisualizationDir, image_name + ".png")
     cv2.imwrite(filename, cv2.cvtColor(combined_image, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_PNG_COMPRESSION , 0])
     print(filename + " saved")
     
-    del stroma_img_rescaled_f, epithelia_img_rescaled_f, img_rgb_rescaled_f, combined_image, white_border_f
+    del stroma_img_rescaled, epithelia_img_rescaled, img_rgb_rescaled, combined_image, white_border
     del img_rgb, img_Cb, stroma_img, epithelia_img, background, epithelia, stroma, stroma2, lumma_binned, filename, img_u_expanded_binned_50, img_v_expanded_binned_50
     # Force a garbage collection
     gc.collect()
