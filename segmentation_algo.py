@@ -5,11 +5,11 @@
 
 kShowImages = 0                                 # to display images in real-time
 kSaveIntermediateImages = 0                    # save R-G-B and Y-Cb-Cr Channels
-#kInputDir = "data/sheffield_h&e"               # all files in here will be read, expected filenames: <filename>.tif
-kInputDir = "data/liverpool_h&e"
+kInputDir = "data/sheffield_h&e"               # all files in here will be read, expected filenames: <filename>.tif
+#kInputDir = "data/liverpool_h&e"
 #kInputDir = "data_test"
-#kOutputDir = "extracted/sheffield_h&e"         # epithelia and stroma will be saved here
-kOutputDir = "extracted/liverpool_h&e"
+kOutputDir = "extracted/sheffield_h&e"         # epithelia and stroma will be saved here
+#kOutputDir = "extracted/liverpool_h&e"
 #kOutputDir = "workingdir/segmented"
 #kOutputDir = "output_test"
 kRunOverAllImages = 1                         # to run over all images in 'kInputDir'
@@ -17,14 +17,14 @@ kOverwriteOutput = 0                            # to overwrite previous output
 #image_name = "test"             # specific image to run with 'kRunOverAllImages = 0'
 #image_name = "h2114158 h&e_ROI_2"
 #image_name = "h2114186 h&e_ROI_3"
-image_name = "h2114182 h&e_ROI_3"
+image_name = "h1810898B  h&e_ROI_4"
 #image_name = "h2114155 h&e_ROI_4"
 kSaveEpitheliaAndStroma = 0                   # to save epithelia and stroma output
 
 # visualizations
 
-#kOutputVisualizationDir = "extracted/sheffield_h&e/visualization"         # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
-kOutputVisualizationDir = "extracted/liverpool_h&e/visualization2"
+kOutputVisualizationDir = "extracted/sheffield_h&e/visualization2"         # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
+#kOutputVisualizationDir = "extracted/liverpool_h&e/visualization2"
 #kOutputVisualizationDir = kOutputDir
 kRescaleSize = 0.5                          # Downscaling image to make our development life easy
 kSaveBinsRepresentation = 0                    # to save Lumma and Red Chroma Bins for visualization
@@ -68,6 +68,7 @@ def ProgramRunTime():
     return runtime
 
 def GetPercentAvailableMemory():
+    global current_file_index, total_num_of_images
     # Get the virtual memory statistics
     mem = psutil.virtual_memory()
     # Get the available memory
@@ -75,7 +76,7 @@ def GetPercentAvailableMemory():
     #available_memory_gb = mem.available / (1024 * 1024 * 1024)
     #print(f"Memory: {available_memory_gb:.1f}GB/{total_memory_gb:.1f}GB")
     percent_mem_available = int(mem.available / mem.total * 100)
-    print(f"{ProgramRunTime()} Memory Available = {percent_mem_available}%")
+    print(f"{ProgramRunTime()} ({current_file_index}/{total_num_of_images}) Memory Available = {percent_mem_available}%")
     return percent_mem_available
 
 # Plot the image
@@ -160,7 +161,7 @@ def create_binned_representation(img_2d, label, no_of_bins = 20, bins_on_plot = 
 # input:
 #   file_index = index of file in files to work with
 def segmentation_algo(file_index, image_name = ""):
-    global kShowImages, kSaveIntermediateImages, kInputDir, kOutputDir, kSaveEpitheliaAndStroma, kOutputVisualizationDir, kSaveBinsRepresentation, files, kOverwriteOutput, kRunOverAllImages, total_num_of_images
+    global kShowImages, kSaveIntermediateImages, kInputDir, kOutputDir, kSaveEpitheliaAndStroma, kOutputVisualizationDir, kSaveBinsRepresentation, files, kOverwriteOutput, kRunOverAllImages, total_num_of_images, figure_id
     
     if file_index != -1:
         f = files[file_index]
@@ -181,18 +182,17 @@ def segmentation_algo(file_index, image_name = ""):
     input_filepath = os.path.join(kInputDir, image_name)
     print(input_filepath + ".tif")
     
-    # figure id - reusing figures to save memory
-    figure_id = 1 #file_index % no_of_threads_to_use
-    
     # Load Image
     img_rgb = cv2.imread(input_filepath + ".tif")
     img_rgb = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2RGB)
-
+    print("After loading img_rgb: " + str(img_rgb.shape))
+    
     # Downsizing / Rescaling image for easier development purpose
     # Can be commented out in release
-    img_rgb = rescale(img_rgb, kRescaleSize, anti_aliasing=True, channel_axis=2)
+    img_rgb = (rescale(img_rgb, kRescaleSize, anti_aliasing=True, channel_axis=2) * 255).astype(np.uint8)
     imshow(img_rgb, 'img_rgb')
-    
+    print("After downscaling img_rgb: " + str(img_rgb.shape))
+
     # time mapping
     #start_time = time.perf_counter_ns()
     #end_time = time.perf_counter_ns()
@@ -202,6 +202,7 @@ def segmentation_algo(file_index, image_name = ""):
         show_images_side_by_side([img_rgb, img_rgb[:,:,0], img_rgb[:,:,1], img_rgb[:,:,2]], ["RGB", "R", "G", "B"], "RGB Channels")
     
     img_YCrCb = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2YCrCb)
+    print("After converting img_YCrCb: " + str(img_YCrCb.shape))
     # Split the image into its channels
     img_Y, img_Cr, img_Cb = cv2.split(img_YCrCb)
     #imshow(img_YCrCb, 'img_YCrCb')
@@ -214,6 +215,7 @@ def segmentation_algo(file_index, image_name = ""):
     #img_Cr_binned, img_Cr_most_pixels_bin = save_binned_representation(img_Cr, "Red Chroma")
     
     # YUV
+    
     img_yuv_f = color.rgb2yuv(img_rgb, channel_axis=-1)
     if kSaveBinsRepresentation or kShowImages:
         show_images_side_by_side([img_rgb, img_yuv_f[:,:,0], img_yuv_f[:,:,1], img_yuv_f[:,:,2]], ["RGB", "Y", "U", "V"], "YUV Channels")
@@ -442,12 +444,16 @@ if not os.path.isdir(kOutputVisualizationDir):
     print("kOutputVisualizationDir: '" + kOutputVisualizationDir + "' directory created.")
     
 
+# figure id - reusing figures to save memory
+figure_id = 1
+
 # Files and Folders in Input Dir
 files = os.listdir(kInputDir)
 # Filtering only the files.
 files = [f for f in files if os.path.isfile(kInputDir+'/'+f)]
 total_num_of_images = len(files)
 print(f"Image Dataset size: {total_num_of_images}")
+current_file_index = 0
 
 # Get available cpu cores
 print("Number of CPU cores:", os.cpu_count())
@@ -461,6 +467,7 @@ if kRunOverAllImages == 1 and kSaveBinsRepresentation == 0 and kShowImages == 0:
     # use multi threading
     with BoundedProcessPoolExecutor(max_workers=no_of_threads_to_use) as worker:
         for f in range(total_num_of_images):
+            current_file_index = f
             percent_mem_available = GetPercentAvailableMemory()
             while percent_mem_available < kPercentMinMemoryAvailableToStartNewThread:
                 time.sleep(1)
