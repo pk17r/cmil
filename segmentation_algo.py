@@ -26,11 +26,11 @@ kSaveEpitheliaAndStroma = 0                   # to save epithelia and stroma out
 kOutputVisualizationDir = "extracted/sheffield_h&e/visualization2"         # output for visual comparison b/w input_img-segmented_stroma-segmented_epithelia
 #kOutputVisualizationDir = "extracted/liverpool_h&e/visualization2"
 #kOutputVisualizationDir = kOutputDir
-kRescaleSize = 0.5                          # Downscaling visualization image to make our development life easy
+kRescaleSize = 0.3                          # Downscaling visualization image to make our development life easy
 kSaveBinsRepresentation = 0                    # to save Lumma and Red Chroma Bins for visualization
 
 # computing resources
-kPercentMinMemoryAvailableToStartNewThread = 50     # if execution gets killed because of low memory, increase this constant. If you have > 32G then you can decrease this
+kPercentMinMemoryAvailableToStartNewThread = 66     # if execution gets killed because of low memory, increase this constant. If you have > 32G then you can decrease this
 
 ##########################################
 
