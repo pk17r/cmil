@@ -345,9 +345,13 @@ def segmentation_algo(file_index, image_name = ""):
     imshow(epithelia, "epithelia3")
     # remove blue ink drop region
     # Mark regions with blue ink drop for removal from epithelia
-    imshow(img_Cb > 152, "blue_ink")
-    epithelia = epithelia * np.invert(img_Cb > 152)
+    blue_ink = img_Cb > 152
+    imshow(blue_ink, "blue_ink")
+    blue_ink = morphology.dilation(blue_ink, morphology.square(5))
+    imshow(blue_ink, "blue_ink")
+    epithelia = epithelia * np.invert(blue_ink)
     imshow(epithelia, "epithelia4")
+    del blue_ink
     # dilation
     #epithelia = morphology.dilation(epithelia, morphology.square(3))
     epithelia = morphology.dilation(epithelia, morphology.square(2))
