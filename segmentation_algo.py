@@ -16,7 +16,7 @@ kSaveEpitheliaAndStroma = 0                   # to save epithelia and stroma in 
 kRunOverAllImages = 0                         # to run over all images in 'kInputDir'
 kOverwriteOutput = 0                            # to overwrite previous output
 #image_name = "test"             # specific image to run with 'kRunOverAllImages = 0'
-image_name = "h2114159 h&e_ROI_2"
+image_name = "h2114163 h&e_ROI_2"
 #image_name = "h2114186 h&e_ROI_3"
 #image_name = "h1810898B  h&e_ROI_4"
 #image_name = "h2114155 h&e_ROI_4"
@@ -51,7 +51,9 @@ from skimage import measure
 #from skimage import segmentation
 #from skimage import filters
 from skimage.transform import rescale
-#import scipy.ndimage as ndimage
+import scipy.ndimage as ndimage
+from skimage.segmentation import watershed
+from skimage.feature import peak_local_max
 import gc
 import psutil
 import time
@@ -88,6 +90,7 @@ def GetPercentAvailableMemory():
 
 # Plot the image
 def imshow(img, title):
+    global kShowImages
     if kShowImages:
         plt.imshow(img)
         plt.tight_layout()
@@ -135,6 +138,7 @@ def show_images_side_by_side(images, image_labels, combined_label):
         plt.show()
 
 def create_binned_representation(img_2d, label, no_of_bins = 20, bins_on_plot = 20, first_bin_on_plot = 0):
+    global kShowImages
     # decimate lumma image into lumma_bins_n
     img_binned = np.clip((np.floor(img_2d.astype(np.float64) * no_of_bins / 255)).astype(np.uint8), 0, no_of_bins-1)
     ## figure to show different img_2d bins
@@ -175,7 +179,7 @@ def create_binned_representation(img_2d, label, no_of_bins = 20, bins_on_plot = 
 # input:
 #   file_index = index of file in files to work with
 def segmentation_algo(file_index, image_name = ""):
-    global files, total_num_of_images
+    global files, total_num_of_images, kShowImages
     # Note: don't add 'image_name' to above list of global variables.
     
     if file_index != -1:
@@ -388,18 +392,42 @@ def segmentation_algo(file_index, image_name = ""):
     imshow(epithelia, "epithelia9")
     # remove small holes
     epithelia = morphology.remove_small_holes(epithelia, 20000)
-    imshow(epithelia, "epithelia")
+    imshow(epithelia, "epithelia10")
     # label connected areas in epithelia
     labels = measure.label(epithelia)
     img_v_dialated = morphology.dilation(img_v, morphology.square(5))
     region_props = measure.regionprops(labels, img_v_dialated, extra_properties=[image_stdev, image_var])
     # get average red chroma value in areas
     for prop in region_props:
-        print(f"label={prop.label} mean={prop.intensity_mean} stdev={prop.image_stdev} var={prop.image_var}")
         if prop.intensity_mean < 133 or prop.intensity_mean > 146:
             # invert areas having mean intensity lower than light red
             print(f"remove area label={prop.label} with img_v_dialated mean={prop.intensity_mean}")
             epithelia = epithelia * np.invert(labels == prop.label)
+    imshow(epithelia, "epithelia11")
+    # find cell density in tissue from bin 4 of lumma, remove regions with low cell density from epithelia
+    cells = lumma_binned <= 6
+    cells = morphology.dilation(cells, morphology.square(15))
+    cells = morphology.remove_small_objects(cells, 2500)
+    imshow(cells, "cells")
+    # keep regions in epithelia that have high cell density
+    # cluster connected areas in epithelia into smaller sizes
+    distance = ndimage.distance_transform_edt(epithelia)
+    coords = peak_local_max(distance, footprint=np.ones((100, 100)), labels=epithelia)
+    mask = np.zeros(distance.shape, dtype=bool)
+    mask[tuple(coords.T)] = True
+    markers, _ = ndimage.label(mask)
+    labels = watershed(-distance, markers, mask=epithelia)
+    region_props = measure.regionprops(labels)
+    # get percentage of cell pixels in regions
+    for prop in region_props:
+        # get overlapping cells
+        cells_overlapp = cells * (labels == prop.label)
+        cell_pixels = np.count_nonzero(cells_overlapp)
+        percent_cell_overlap = cell_pixels / prop.num_pixels * 100
+        if percent_cell_overlap < 20:
+            print(f"removing label={prop.label} num_pixels={prop.num_pixels} percent_overlap={percent_cell_overlap}")
+            epithelia = epithelia * np.invert(labels == prop.label)
+    imshow(epithelia, "epithelia")
     print('epithelia located')
     if kSaveIntermediateImages:
         filename = os.path.join(kOutputDir, image_name + " Epithelia Mask.png")
